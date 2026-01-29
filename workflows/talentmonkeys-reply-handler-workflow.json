@@ -1,0 +1,354 @@
+{
+  "name": "TalentMonkeys Reply Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "events": ["messageReceived"],
+        "filters": {},
+        "options": {
+          "format": "full"
+        }
+      },
+      "id": "gmail-trigger",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "notes": "Triggers on new email replies"
+    },
+    {
+      "parameters": {
+        "jsCode": "const negativeKeywords = [\n  \"kein interesse\", \"nicht interessiert\", \"keine weiteren\", \"bitte nicht mehr\",\n  \"abbestellen\", \"unsubscribe\", \"remove\", \"stop\", \"nein danke\", \"no thank\",\n  \"nicht kontaktieren\", \"aus dem verteiler\", \"kein bedarf\", \"nicht benötigt\",\n  \"please stop\", \"do not contact\", \"keine emails\", \"spam\",\n  \"entfernen sie mich\", \"abmelden\", \"nicht mehr kontaktieren\",\n  \"keine nachrichten\", \"keine e-mails\", \"keine mails\",\n  \"unerwünscht\", \"nicht erwünscht\", \"belästigung\"\n];\n\nconst positiveKeywords = [\n  \"interesse\", \"interessiert\", \"ja gerne\", \"vereinbaren\",\n  \"termin\", \"telefonat\", \"gespräch\", \"kontaktieren sie\",\n  \"rufen sie\", \"anrufen\", \"weiter\", \"mehr erfahren\",\n  \"sounds good\", \"let's talk\", \"call me\"\n];\n\n// Get email text\nconst emailText = ($json.textPlain || $json.snippet || $json.body?.text || '').toLowerCase();\nconst subject = ($json.subject || '').toLowerCase();\nconst fromEmail = $json.from?.emailAddress || $json.from || '';\n\n// Check for negative response\nconst isNegative = negativeKeywords.some(kw => \n  emailText.includes(kw) || subject.includes(kw)\n);\n\n// Check for positive response\nconst isPositive = positiveKeywords.some(kw => \n  emailText.includes(kw) || subject.includes(kw)\n) && !isNegative;\n\n// Extract original subject for reply\nlet originalSubject = $json.subject || '';\nif (!originalSubject.toLowerCase().startsWith('re:')) {\n  originalSubject = 'Re: ' + originalSubject;\n}\n\nreturn [{\n  json: {\n    isNegative,\n    isPositive,\n    emailText,\n    subject: $json.subject,\n    originalSubject,\n    fromEmail,\n    fromName: $json.from?.name || fromEmail.split('@')[0] || '',\n    messageId: $json.id || $json.messageId,\n    threadId: $json.threadId,\n    receivedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "detect-response-type",
+      "name": "Detect Response Type",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "notes": "Detects if response is negative/positive"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "is-negative-check",
+              "leftValue": "={{ $json.isNegative }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-negative",
+      "name": "IF Negative",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 300],
+      "notes": "Checks if response is negative"
+    },
+    {
+      "parameters": {
+        "unit": "hours",
+        "amount": 1
+      },
+      "id": "wait-1h",
+      "name": "Wait 1 Hour",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [660, 200],
+      "notes": "Waits 1 hour before responding"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\nconst vorname = data.fromName?.split(' ')[0] || 'Guten Tag';\nconst originalSubject = data.originalSubject || 'Re: Ihre Position';\n\nconst friendlyReply = `Hallo ${vorname},\n\nvielen Dank für Ihre Rückmeldung.\n\nSollte sich in Zukunft Bedarf ergeben, stehe ich gerne zur Verfügung.\n\nAlles Gute!\n\nBeste Grüße\nFlavio Arteaga\ntalentmonkeys GmbH`;\n\nreturn [{\n  json: {\n    ...data,\n    replySubject: originalSubject,\n    replyBody: friendlyReply,\n    vorname\n  }\n}];"
+      },
+      "id": "build-friendly-reply",
+      "name": "Build Friendly Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 200],
+      "notes": "Creates polite acknowledgment"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.fromEmail }}",
+        "subject": "={{ $json.replySubject }}",
+        "message": "={{ $json.replyBody }}",
+        "options": {
+          "replyTo": "Flavio@talentmonkeys.com"
+        }
+      },
+      "id": "gmail-friendly-reply",
+      "name": "Gmail Friendly Reply",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1100, 200],
+      "notes": "Sends friendly acknowledgment"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "TalentMonkeys Leads",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.fromEmail }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Abgelehnt",
+            "Notizen": "=Negative Antwort erhalten: {{ $now.toFormat('yyyy-MM-dd HH:mm') }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-update-rejected",
+      "name": "Google Sheets Update Rejected",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1320, 200],
+      "notes": "Updates lead status to 'Abgelehnt'"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "is-positive-check",
+              "leftValue": "={{ $json.isPositive }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-positive",
+      "name": "IF Positive",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 400],
+      "notes": "Checks if response shows interest"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "TalentMonkeys Leads",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.fromEmail }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Interessiert",
+            "Notizen": "=Positive Antwort erhalten: {{ $now.toFormat('yyyy-MM-dd HH:mm') }} - {{ $json.emailText.substring(0, 200) }}..."
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-update-interested",
+      "name": "Google Sheets Update Interested",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [880, 300],
+      "notes": "Updates lead status to 'Interessiert'"
+    },
+    {
+      "parameters": {
+        "sendTo": "Flavio@talentmonkeys.com",
+        "subject": "=🎉 Positive Antwort von {{ $json.fromName }} ({{ $json.fromEmail }})",
+        "message": "=Hallo Flavio,\n\nGute Nachrichten! Du hast eine positive Antwort erhalten:\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nVon: {{ $json.fromName }} <{{ $json.fromEmail }}>\nBetreff: {{ $json.subject }}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n{{ $json.emailText }}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nBitte kontaktiere den Lead zeitnah!\n\nViele Grüße,\nDein n8n Workflow",
+        "options": {}
+      },
+      "id": "gmail-notify-positive",
+      "name": "Gmail Notify Positive",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1100, 300],
+      "notes": "Notifies Flavio about positive response"
+    },
+    {
+      "parameters": {},
+      "id": "no-op-neutral",
+      "name": "No Operation (Neutral)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [880, 500],
+      "notes": "Neutral response - no action needed"
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Detect Response Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Response Type": {
+      "main": [
+        [
+          {
+            "node": "IF Negative",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Negative": {
+      "main": [
+        [
+          {
+            "node": "Wait 1 Hour",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF Positive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1 Hour": {
+      "main": [
+        [
+          {
+            "node": "Build Friendly Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Friendly Reply": {
+      "main": [
+        [
+          {
+            "node": "Gmail Friendly Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Friendly Reply": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Update Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Positive": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Update Interested",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation (Neutral)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Update Interested": {
+      "main": [
+        [
+          {
+            "node": "Gmail Notify Positive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "",
+    "timezone": "Europe/Vienna",
+    "executionTimeout": 300
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Lead Generation"
+    },
+    {
+      "name": "TalentMonkeys"
+    },
+    {
+      "name": "Reply Handler"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-29T00:00:00.000Z",
+  "versionId": "1"
+}

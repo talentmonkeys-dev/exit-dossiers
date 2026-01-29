@@ -1,0 +1,1204 @@
+{
+  "name": "TalentMonkeys Lead Gen",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "notes": "Runs Mon-Fri at 08:00 Vienna time"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Category Rotation System\nconst categories = [\n  {\n    name: \"IT\",\n    queries: [\n      \"Software Developer Austria\",\n      \"IT Manager Wien\",\n      \"DevOps Engineer Österreich\",\n      \"Data Engineer Austria\",\n      \"Cloud Architect Wien\",\n      \"Backend Developer Austria\",\n      \"Frontend Developer Wien\",\n      \"Full Stack Developer Österreich\"\n    ]\n  },\n  {\n    name: \"Sales\",\n    queries: [\n      \"Sales Manager Austria\",\n      \"Account Manager Wien\",\n      \"Business Development Manager Österreich\",\n      \"Key Account Manager Austria\",\n      \"Sales Director Wien\",\n      \"Vertriebsleiter Österreich\"\n    ]\n  },\n  {\n    name: \"Marketing\",\n    queries: [\n      \"Marketing Manager Austria\",\n      \"Digital Marketing Manager Wien\",\n      \"Brand Manager Österreich\",\n      \"Content Marketing Manager Austria\",\n      \"Marketing Director Wien\",\n      \"Head of Marketing Österreich\"\n    ]\n  },\n  {\n    name: \"Finance\",\n    queries: [\n      \"Finance Manager Austria\",\n      \"Controller Wien\",\n      \"CFO Österreich\",\n      \"Financial Controller Austria\",\n      \"Head of Finance Wien\",\n      \"Accounting Manager Österreich\"\n    ]\n  },\n  {\n    name: \"HR\",\n    queries: [\n      \"HR Manager Austria\",\n      \"People & Culture Manager Wien\",\n      \"Talent Acquisition Manager Österreich\",\n      \"HR Director Austria\",\n      \"Head of People Wien\"\n    ]\n  },\n  {\n    name: \"Engineering\",\n    queries: [\n      \"Engineering Manager Austria\",\n      \"Technical Lead Wien\",\n      \"Project Engineer Österreich\",\n      \"Mechanical Engineer Austria\",\n      \"Electrical Engineer Wien\"\n    ]\n  },\n  {\n    name: \"Operations\",\n    queries: [\n      \"Operations Manager Austria\",\n      \"Supply Chain Manager Wien\",\n      \"Logistics Manager Österreich\",\n      \"COO Austria\",\n      \"Head of Operations Wien\"\n    ]\n  }\n];\n\n// Calculate which category based on days since start\nconst startDate = new Date('2025-01-01');\nconst today = new Date();\nconst daysSinceStart = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));\nconst categoryIndex = daysSinceStart % categories.length;\n\nconst todaysCategory = categories[categoryIndex];\nconst nextCategory = categories[(categoryIndex + 1) % categories.length];\n\nreturn [{\n  json: {\n    category: todaysCategory.name,\n    queries: todaysCategory.queries,\n    categoryIndex: categoryIndex,\n    nextCategory: nextCategory.name,\n    date: today.toISOString().split('T')[0]\n  }\n}];"
+      },
+      "id": "category-rotation",
+      "name": "Category Rotation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "notes": "Determines today's job category based on rotation"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.queries.map(q => ({ query: q, category: $json.category })) }}",
+        "options": {}
+      },
+      "id": "split-queries",
+      "name": "Split Queries",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [440, 300],
+      "notes": "Creates one item per search query"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "YOUR_SERPER_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"q\": \"{{ $json.query }} site:karriere.at OR site:stepstone.at OR site:linkedin.com/jobs\",\n  \"location\": \"Austria\",\n  \"gl\": \"at\",\n  \"hl\": \"de\",\n  \"num\": 20\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "serper-search",
+      "name": "Serper Job Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "notes": "Searches Google for job postings"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst allJobs = [];\n\n// Blacklist\nconst blacklist = [\n  \"PSA\", \"Drees & Sommer\", \"LKW Walter\", \"Cyan Security\", \"Schmachtl\",\n  \"Netconomy\", \"Lisec\", \"Babak Bacon\", \"Binderholz\", \"Post\", \"Lat Nitrogen\",\n  \"Still\", \"ATSP\", \"KUKA\", \"Kotanyi\", \"Eam\", \"Rohndo Ganahl\", \"Informatics\",\n  \"Rail Power Systems\", \"Doka\", \"Hobex\", \"Budimex\", \"ComeOn Group\", \"Toolsense\",\n  \"Mubea\", \"XXXL\", \"Ortner\", \"Axians\", \"ARAG\", \"Planradar\", \"Haberkorn\",\n  \"Xit Cross\", \"Würth Elektronik\", \"Filzwieser\", \"Tractive\", \"Bühler\",\n  \"Salesianer\", \"Lasselsberger\", \"TaxPro\", \"Automation X\", \"Light for the world\",\n  \"Ebcont\", \"Waterdrop\", \"Hoerbiger\", \"Verbund\", \"Plasmics\", \"Patchbox\", \"Feri\",\n  \"Navax\", \"Uniqa\", \"Workist\", \"RBI\", \"Hahn Software\", \"Bawag\", \"Finmatics\",\n  \"Meister\", \"KIK\", \"With Solid\", \"Tink\", \"UCS\", \"Mister Specks\", \"Bitpanda\",\n  \"Speedinvest\", \"CTRL.QS\", \"Joris Ide\", \"Gebr. Heinemann\", \"Ubimet\", \"Gekko\",\n  \"Steffl\", \"Waldquelle\", \"enspired\", \"Swat.io\", \"Consileon\", \"Glacier\",\n  \"Treetop Medical\", \"Sclable\", \"Journi\", \"Jentis\", \"Generali\", \"Otago\",\n  \"Anyline\", \"Celum\", \"Frequentis\", \"Herold\", \"IBM iX CH DE\", \"Imi\",\n  \"Voestalpine\", \"Tourradar\", \"Mysugr\", \"Evolve Consulting\", \"Bet@Home\",\n  \"Alpenland\", \"Nexxar\", \"NextMunich\", \"BWT\", \"ZKW\", \"Deepopinion\", \"Oatly\",\n  \"Eversports\", \"HalloSonne\", \"Dynatrace\", \"Ikarus\", \"Storyblok\", \"IKEA\", \"Mjam\"\n];\n\n// Recruiting agency keywords\nconst recruitingKeywords = [\n  \"recruiting\", \"staffing\", \"personalberatung\", \"headhunter\",\n  \"hr consulting\", \"personaldienstleister\", \"zeitarbeit\",\n  \"personalvermittlung\", \"executive search\", \"talent acquisition agency\",\n  \"randstad\", \"hays\", \"michael page\", \"robert half\", \"adecco\", \"manpower\"\n];\n\nconst jobDescriptionKeywords = [\n  \"im auftrag unseres kunden\",\n  \"für unseren kunden\",\n  \"im kundenauftrag\",\n  \"unser kunde sucht\",\n  \"für einen kunden\"\n];\n\nfunction isBlacklisted(companyName) {\n  if (!companyName) return true;\n  const nameLower = companyName.toLowerCase();\n  return blacklist.some(bl => nameLower.includes(bl.toLowerCase()));\n}\n\nfunction isRecruitingAgency(companyName, jobDescription) {\n  if (!companyName) return true;\n  const nameLower = companyName.toLowerCase();\n  const descLower = (jobDescription || '').toLowerCase();\n  \n  const isAgencyName = recruitingKeywords.some(kw => nameLower.includes(kw));\n  const isAgencyJob = jobDescriptionKeywords.some(kw => descLower.includes(kw));\n  \n  return isAgencyName || isAgencyJob;\n}\n\nfunction isRecentJob(dateString) {\n  if (!dateString) return false;\n  const twoWeeksAgo = new Date();\n  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);\n  \n  // Try to parse German date formats\n  const germanMonths = {\n    'januar': 0, 'februar': 1, 'märz': 2, 'april': 3, 'mai': 4, 'juni': 5,\n    'juli': 6, 'august': 7, 'september': 8, 'oktober': 9, 'november': 10, 'dezember': 11,\n    'jan': 0, 'feb': 1, 'mär': 2, 'apr': 3, 'jun': 5, 'jul': 6, 'aug': 7, 'sep': 8, 'okt': 9, 'nov': 10, 'dez': 11\n  };\n  \n  // Check for relative dates\n  const lowerDate = dateString.toLowerCase();\n  if (lowerDate.includes('heute') || lowerDate.includes('today') || \n      lowerDate.includes('gestern') || lowerDate.includes('yesterday') ||\n      lowerDate.includes('vor 1 tag') || lowerDate.includes('1 day ago')) {\n    return true;\n  }\n  \n  // Check for \"vor X tagen\" pattern\n  const daysAgoMatch = lowerDate.match(/(\\d+)\\s*(tag|day)/i);\n  if (daysAgoMatch) {\n    const daysAgo = parseInt(daysAgoMatch[1]);\n    return daysAgo <= 14;\n  }\n  \n  return true; // Default to including if we can't parse\n}\n\nfunction extractDomain(companyName) {\n  // Simple domain extraction - will be enriched by Apollo\n  if (!companyName) return null;\n  const cleaned = companyName\n    .toLowerCase()\n    .replace(/\\s*(gmbh|ag|se|kg|og|e\\.u\\.|& co\\.?|corp\\.?|inc\\.?|ltd\\.?|ges\\.?m\\.?b\\.?h\\.?|co\\.? kg)\\s*/gi, '')\n    .replace(/[^a-z0-9]/g, '')\n    .trim();\n  return cleaned ? `${cleaned}.at` : null;\n}\n\nfunction cleanCompanyName(name) {\n  if (!name) return '';\n  return name\n    .replace(/\\s*(GmbH|AG|SE|KG|OG|e\\.U\\.|& Co\\.?|Corp\\.?|Inc\\.?|Ltd\\.?|Ges\\.?m\\.?b\\.?H\\.?|Co\\.? KG)\\s*/gi, '')\n    .replace(/[,.\\-–—]+$/, '')\n    .trim();\n}\n\nfunction cleanJobTitle(title) {\n  if (!title) return '';\n  return title\n    .replace(/\\s*\\(m\\/w\\/d\\)\\s*/gi, '')\n    .replace(/\\s*\\(w\\/m\\/d\\)\\s*/gi, '')\n    .replace(/\\s*\\(d\\/m\\/w\\)\\s*/gi, '')\n    .replace(/\\s*\\(all genders\\)\\s*/gi, '')\n    .replace(/\\s*\\(f\\/m\\/d\\)\\s*/gi, '')\n    .replace(/\\s*[-–—]\\s*$/, '')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nconst seenCompanies = new Set();\n\nfor (const item of items) {\n  const results = item.json.organic || [];\n  const category = item.json.category || $('Category Rotation').first().json.category;\n  \n  for (const result of results) {\n    const companyName = result.company || result.source || '';\n    const jobTitle = result.title || '';\n    const jobUrl = result.link || '';\n    const snippet = result.snippet || '';\n    const date = result.date || '';\n    \n    // Skip if blacklisted\n    if (isBlacklisted(companyName)) continue;\n    \n    // Skip if recruiting agency\n    if (isRecruitingAgency(companyName, snippet)) continue;\n    \n    // Skip if not recent\n    if (!isRecentJob(date)) continue;\n    \n    // Skip duplicates\n    const companyKey = cleanCompanyName(companyName).toLowerCase();\n    if (seenCompanies.has(companyKey)) continue;\n    seenCompanies.add(companyKey);\n    \n    allJobs.push({\n      json: {\n        company_name: companyName,\n        company_name_clean: cleanCompanyName(companyName),\n        company_domain: extractDomain(companyName),\n        job_title: jobTitle,\n        job_title_clean: cleanJobTitle(jobTitle),\n        job_url: jobUrl,\n        snippet: snippet,\n        posted_date: date,\n        category: category,\n        scraped_at: new Date().toISOString()\n      }\n    });\n  }\n}\n\n// Return max 100 jobs for processing\nreturn allJobs.slice(0, 100);"
+      },
+      "id": "parse-filter-jobs",
+      "name": "Parse & Filter Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300],
+      "notes": "Filters out blacklisted companies and recruiting agencies"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "loop-apollo-org",
+      "name": "Loop Apollo Org",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1100, 300],
+      "notes": "Process one company at a time for Apollo enrichment"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/organizations/enrich",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "YOUR_APOLLO_API_KEY"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"domain\": \"{{ $json.company_domain }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "apollo-org-enrich",
+      "name": "Apollo Org Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 300],
+      "notes": "Gets company data from Apollo"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "employee-check",
+              "leftValue": "={{ $json.organization?.estimated_num_employees || 0 }}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-50-employees",
+      "name": "IF >= 50 Employees",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1540, 300],
+      "notes": "Only proceed if company has 50+ employees"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/mixed_people/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "YOUR_APOLLO_API_KEY"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"organization_domains\": [\"{{ $('Loop Apollo Org').item.json.company_domain }}\"],\n  \"person_titles\": [\n    \"HR Business Partner\",\n    \"Head of HR\",\n    \"HR Director\",\n    \"HR Manager\",\n    \"People & Culture Manager\",\n    \"Talent Acquisition Manager\",\n    \"HR Lead\",\n    \"Personalleiter\",\n    \"Leiter Personal\",\n    \"Chief People Officer\",\n    \"VP HR\",\n    \"VP People\",\n    \"Head of People\",\n    \"People Operations Manager\"\n  ],\n  \"per_page\": 3\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "apollo-people-search",
+      "name": "Apollo People Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 200],
+      "notes": "Searches for HR contacts at the company"
+    },
+    {
+      "parameters": {
+        "jsCode": "const orgData = $('Apollo Org Enrichment').first().json;\nconst jobData = $('Loop Apollo Org').first().json;\nconst peopleData = $json.people || [];\n\nif (peopleData.length === 0) {\n  return [{\n    json: {\n      ...jobData,\n      organization: orgData.organization || {},\n      hr_contact_found: false,\n      skip_reason: 'No HR contacts found'\n    }\n  }];\n}\n\n// Get the first (most relevant) HR contact\nconst hrContact = peopleData[0];\n\nreturn [{\n  json: {\n    ...jobData,\n    organization: orgData.organization || {},\n    hr_contact_found: true,\n    hr_first_name: hrContact.first_name || '',\n    hr_last_name: hrContact.last_name || '',\n    hr_full_name: `${hrContact.first_name || ''} ${hrContact.last_name || ''}`.trim(),\n    hr_title: hrContact.title || '',\n    hr_linkedin_url: hrContact.linkedin_url || '',\n    hr_email: hrContact.email || '',\n    hr_phone: hrContact.phone_numbers?.[0]?.sanitized_number || '',\n    hr_apollo_id: hrContact.id || '',\n    employees: orgData.organization?.estimated_num_employees || 0\n  }\n}];"
+      },
+      "id": "merge-people-data",
+      "name": "Merge People Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 200],
+      "notes": "Combines organization and people data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "hr-contact-check",
+              "leftValue": "={{ $json.hr_contact_found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-hr-contact-found",
+      "name": "IF HR Contact Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2200, 200],
+      "notes": "Only proceed if we found an HR contact"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/people/match",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "YOUR_APOLLO_API_KEY"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"first_name\": \"{{ $json.hr_first_name }}\",\n  \"last_name\": \"{{ $json.hr_last_name }}\",\n  \"organization_name\": \"{{ $json.company_name }}\",\n  \"reveal_personal_emails\": false,\n  \"reveal_phone_number\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "apollo-contact-match",
+      "name": "Apollo Contact Match",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 100],
+      "notes": "Gets verified email and phone for HR contact"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevData = $('IF HR Contact Found').first().json;\nconst matchData = $json.person || {};\n\n// Check if email is verified\nconst emailVerified = matchData.email_status === 'verified';\nconst email = emailVerified ? matchData.email : prevData.hr_email;\nconst phone = matchData.phone_numbers?.[0]?.sanitized_number || prevData.hr_phone;\n\nreturn [{\n  json: {\n    ...prevData,\n    hr_email: email,\n    hr_phone: phone,\n    hr_email_verified: emailVerified,\n    enrichment_complete: true\n  }\n}];"
+      },
+      "id": "finalize-contact-data",
+      "name": "Finalize Contact Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 100],
+      "notes": "Finalizes contact data with verified email"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "email-verified-check",
+              "leftValue": "={{ $json.hr_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-email-exists",
+      "name": "IF Email Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2860, 100],
+      "notes": "Only proceed if we have an email address"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "TalentMonkeys Leads",
+          "mode": "name"
+        },
+        "options": {
+          "returnAllMatches": {
+            "returnAllMatches": "all"
+          }
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.hr_email }}"
+            }
+          ]
+        }
+      },
+      "id": "sheets-lookup",
+      "name": "Google Sheets Lookup",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [3080, 0],
+      "notes": "Checks if lead already exists in Google Sheets"
+    },
+    {
+      "parameters": {
+        "jsCode": "const existingLeads = $('Google Sheets Lookup').all();\nconst currentLead = $('IF Email Exists').first().json;\n\n// Check if contact was contacted in last 30 days\nconst thirtyDaysAgo = new Date();\nthirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);\n\nlet shouldContact = true;\nlet reason = '';\n\nfor (const existing of existingLeads) {\n  const lastContact = existing.json['Letzter Kontakt'];\n  if (lastContact) {\n    const contactDate = new Date(lastContact);\n    if (contactDate >= thirtyDaysAgo) {\n      shouldContact = false;\n      reason = `Already contacted on ${lastContact}`;\n      break;\n    }\n  }\n}\n\nreturn [{\n  json: {\n    ...currentLead,\n    is_new_lead: existingLeads.length === 0,\n    should_contact: shouldContact,\n    skip_reason: reason\n  }\n}];"
+      },
+      "id": "check-duplicate",
+      "name": "Check Duplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3300, 0],
+      "notes": "Checks if lead was contacted in last 30 days"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "should-contact-check",
+              "leftValue": "={{ $json.should_contact }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-should-contact",
+      "name": "IF Should Contact",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3520, 0],
+      "notes": "Proceeds only if not contacted in last 30 days"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfunction cleanCompanyName(name) {\n  if (!name) return '';\n  return name\n    .replace(/\\s*(GmbH|AG|SE|KG|OG|e\\.U\\.|& Co\\.?|Corp\\.?|Inc\\.?|Ltd\\.?|Ges\\.?m\\.?b\\.?H\\.?|Co\\.? KG)\\s*/gi, '')\n    .replace(/[,.\\-–—]+$/, '')\n    .trim();\n}\n\nfunction cleanJobTitle(title) {\n  if (!title) return '';\n  return title\n    .replace(/\\s*\\(m\\/w\\/d\\)\\s*/gi, '')\n    .replace(/\\s*\\(w\\/m\\/d\\)\\s*/gi, '')\n    .replace(/\\s*\\(d\\/m\\/w\\)\\s*/gi, '')\n    .replace(/\\s*\\(all genders\\)\\s*/gi, '')\n    .replace(/\\s*\\(f\\/m\\/d\\)\\s*/gi, '')\n    .replace(/\\s*[-–—]\\s*$/, '')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction extractFirstName(fullName) {\n  if (!fullName) return '';\n  return fullName.split(' ')[0];\n}\n\nreturn items.map(item => {\n  const data = item.json;\n  return {\n    json: {\n      // Sheet columns\n      Datum: new Date().toISOString().split('T')[0],\n      Kategorie: data.category || '',\n      Firma: cleanCompanyName(data.company_name),\n      Mitarbeiter: data.employees || data.organization?.estimated_num_employees || '',\n      'Job Titel': cleanJobTitle(data.job_title),\n      'Job URL': data.job_url || '',\n      Gehalt: '', // To be extracted if available\n      'HR Kontakt': data.hr_full_name || '',\n      Email: data.hr_email || '',\n      Telefon: data.hr_phone || '',\n      LinkedIn: data.hr_linkedin_url || '',\n      'Weitere Jobs': '',\n      Status: 'Neu',\n      'Letzter Kontakt': '',\n      Notizen: '',\n      // Additional data for email template\n      vorname: extractFirstName(data.hr_full_name),\n      firma_clean: cleanCompanyName(data.company_name),\n      job_titel_clean: cleanJobTitle(data.job_title)\n    }\n  };\n});"
+      },
+      "id": "clean-data",
+      "name": "Clean Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3740, -100],
+      "notes": "Cleans company names and job titles"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "TalentMonkeys Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Datum": "={{ $json.Datum }}",
+            "Kategorie": "={{ $json.Kategorie }}",
+            "Firma": "={{ $json.Firma }}",
+            "Mitarbeiter": "={{ $json.Mitarbeiter }}",
+            "Job Titel": "={{ $json['Job Titel'] }}",
+            "Job URL": "={{ $json['Job URL'] }}",
+            "Gehalt": "={{ $json.Gehalt }}",
+            "HR Kontakt": "={{ $json['HR Kontakt'] }}",
+            "Email": "={{ $json.Email }}",
+            "Telefon": "={{ $json.Telefon }}",
+            "LinkedIn": "={{ $json.LinkedIn }}",
+            "Weitere Jobs": "={{ $json['Weitere Jobs'] }}",
+            "Status": "={{ $json.Status }}",
+            "Letzter Kontakt": "={{ $json['Letzter Kontakt'] }}",
+            "Notizen": "={{ $json.Notizen }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-append",
+      "name": "Google Sheets Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [3960, -100],
+      "notes": "Adds new leads to Google Sheets"
+    },
+    {
+      "parameters": {
+        "maxItems": 50
+      },
+      "id": "limit-50",
+      "name": "Limit 50",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [4180, -100],
+      "notes": "Limits to 50 leads per day"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst categoryData = $('Category Rotation').first().json;\nconst date = new Date().toISOString().split('T')[0];\n\n// Build leads list for email\nlet leadsHtml = '';\nlet leadIndex = 1;\n\nfor (const item of items) {\n  const data = item.json;\n  leadsHtml += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nLEAD ${leadIndex}:\n🏢 Firma: ${data.Firma || data.firma_clean || ''}\n💼 Job: ${data['Job Titel'] || data.job_titel_clean || ''}\n💰 Gehalt: ${data.Gehalt || 'Nicht angegeben'}\n👥 Mitarbeiter: ${data.Mitarbeiter || ''}\n👤 HR: ${data['HR Kontakt'] || ''}\n📧 ${data.Email || ''}\n📞 ${data.Telefon || 'Nicht verfügbar'}\n🔗 ${data['Job URL'] || ''}\n\n→ \"${leadIndex} OK\" oder \"${leadIndex} SKIP\"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;\n  leadIndex++;\n}\n\nconst emailBody = `Hallo Flavio,\n\nHeute: ${categoryData.category} Jobs\n\nHier sind die ${items.length} Leads zur Freigabe:\n${leadsHtml}\n\nAntworte mit: \"1 OK, 2 OK, 3 SKIP, 4 OK\" etc.\n\nMorgen: ${categoryData.nextCategory} Jobs\n\nViele Grüße,\nDein n8n Workflow`;\n\nreturn [{\n  json: {\n    subject: `🎯 ${items.length} neue ${categoryData.category} Leads zur Freigabe - ${date}`,\n    body: emailBody,\n    leads: items.map(i => i.json),\n    leadCount: items.length,\n    category: categoryData.category,\n    nextCategory: categoryData.nextCategory,\n    date: date\n  }\n}];"
+      },
+      "id": "build-approval-email",
+      "name": "Build Approval Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4400, -100],
+      "notes": "Builds the approval request email"
+    },
+    {
+      "parameters": {
+        "sendTo": "Flavio@talentmonkeys.com",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "gmail-approval",
+      "name": "Gmail Approval Request",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [4620, -100],
+      "notes": "Sends approval request to Flavio"
+    },
+    {
+      "parameters": {
+        "events": ["messageReceived"],
+        "filters": {
+          "from": "Flavio@talentmonkeys.com"
+        },
+        "options": {
+          "format": "full"
+        }
+      },
+      "id": "gmail-trigger-reply",
+      "name": "Gmail Trigger Reply",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [4840, -100],
+      "notes": "Triggers on Flavio's reply"
+    },
+    {
+      "parameters": {
+        "jsCode": "const reply = ($json.textPlain || $json.snippet || '').toUpperCase();\nconst approvedLeads = [];\nconst skippedLeads = [];\n\n// Parse Format: \"1 OK, 2 SKIP, 3 OK\"\nconst pattern = /(\\d+)\\s*(OK|SKIP|JA|NEIN|YES|NO)/gi;\nlet match;\n\nwhile ((match = pattern.exec(reply)) !== null) {\n  const leadNum = parseInt(match[1]);\n  const action = match[2].toUpperCase();\n  \n  if (['OK', 'JA', 'YES'].includes(action)) {\n    approvedLeads.push(leadNum);\n  } else {\n    skippedLeads.push(leadNum);\n  }\n}\n\nreturn [{\n  json: {\n    approvedLeads,\n    skippedLeads,\n    rawReply: reply\n  }\n}];"
+      },
+      "id": "parse-reply",
+      "name": "Parse Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5060, -100],
+      "notes": "Parses Flavio's approval/skip decisions"
+    },
+    {
+      "parameters": {
+        "jsCode": "const approvalData = $('Parse Reply').first().json;\nconst leads = $('Build Approval Email').first().json.leads || [];\n\nconst approvedIndexes = approvalData.approvedLeads || [];\nconst approvedLeads = [];\n\nfor (const idx of approvedIndexes) {\n  const leadIndex = idx - 1; // Convert 1-based to 0-based\n  if (leadIndex >= 0 && leadIndex < leads.length) {\n    approvedLeads.push({ json: leads[leadIndex] });\n  }\n}\n\nreturn approvedLeads.length > 0 ? approvedLeads : [{ json: { noApprovedLeads: true } }];"
+      },
+      "id": "filter-approved",
+      "name": "Filter Approved",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5280, -100],
+      "notes": "Filters to only approved leads"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-approved-check",
+              "leftValue": "={{ $json.noApprovedLeads }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-approved",
+      "name": "IF Has Approved",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [5500, -100],
+      "notes": "Checks if there are approved leads"
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = DateTime.now().setZone('Europe/Vienna');\nconst hour = now.hour;\nconst dayOfWeek = now.weekday; // 1=Mon, 7=Sun\n\n// Checks\nconst isWeekend = dayOfWeek > 5;\nconst isOutsideHours = hour < 8 || hour >= 18;\n\nif (isWeekend || isOutsideHours) {\n  // Calculate next business day at 8am\n  let next = now.plus({ days: 1 }).set({ hour: 8, minute: 0, second: 0 });\n  while (next.weekday > 5) {\n    next = next.plus({ days: 1 });\n  }\n  \n  return [{\n    json: {\n      ...$json,\n      canSend: false,\n      reason: isWeekend ? 'Weekend' : 'Outside business hours',\n      scheduleFor: next.toISO()\n    }\n  }];\n}\n\n// Random delay 5-15 minutes\nconst delayMinutes = Math.floor(Math.random() * 11) + 5;\n\nreturn [{\n  json: {\n    ...$json,\n    canSend: true,\n    delayMinutes,\n    sendAt: now.plus({ minutes: delayMinutes }).toISO()\n  }\n}];"
+      },
+      "id": "spam-check",
+      "name": "Spam Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5720, -200],
+      "notes": "Checks business hours and adds random delay"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "can-send-check",
+              "leftValue": "={{ $json.canSend }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-can-send",
+      "name": "IF Can Send",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [5940, -200],
+      "notes": "Proceeds only if within business hours"
+    },
+    {
+      "parameters": {
+        "unit": "minutes",
+        "amount": "={{ $json.delayMinutes }}"
+      },
+      "id": "wait-delay",
+      "name": "Wait Random Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [6160, -300],
+      "notes": "Waits 5-15 minutes between emails"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reference customers list (excluding blacklisted ones for referrals)\nconst referenzen = [\n  \"Drees & Sommer\", \"Cyan Security\", \"Schmachtl\",\n  \"Netconomy\", \"Lisec\", \"Binderholz\", \"Post\", \"Still\", \"KUKA\", \"Kotanyi\",\n  \"Rail Power Systems\", \"Doka\", \"Hobex\", \"ComeOn Group\", \"Toolsense\",\n  \"Mubea\", \"XXXL\", \"Ortner\", \"Axians\", \"ARAG\", \"Planradar\", \"Haberkorn\",\n  \"Würth Elektronik\", \"Tractive\", \"Bühler\", \"Salesianer\", \"Lasselsberger\", \"Ebcont\"\n];\n\n// Shuffle and pick 2 random references\nconst shuffled = [...referenzen].sort(() => Math.random() - 0.5);\n\nconst data = $json;\nconst vorname = data.vorname || data['HR Kontakt']?.split(' ')[0] || 'Guten Tag';\nconst jobTitel = data.job_titel_clean || data['Job Titel'] || 'offene Position';\nconst firma = data.firma_clean || data.Firma || 'Ihr Unternehmen';\n\nconst emailBody = `Hallo ${vorname},\n\nich bin auf Ihre offene ${jobTitel} Position aufmerksam geworden.\n\nWir bei talentmonkeys sind auf genau solche Positionen spezialisiert und arbeiten rein erfolgsbasiert. Sie zahlen nur bei erfolgreicher Besetzung.\n\nFirmen wie ${shuffled[0]} und ${shuffled[1]} vertrauen bereits auf uns.\n\nHätten Sie diese Woche kurz Zeit für ein Telefonat?\n\nBeste Grüße\nFlavio Arteaga\n\ntalentmonkeys GmbH\ntalentmonkeys.com`;\n\nreturn [{\n  json: {\n    ...data,\n    emailSubject: jobTitel,\n    emailBody: emailBody,\n    referenz_1: shuffled[0],\n    referenz_2: shuffled[1]\n  }\n}];"
+      },
+      "id": "personalize-email",
+      "name": "Personalize Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [6380, -300],
+      "notes": "Creates personalized email with random references"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Email }}",
+        "subject": "={{ $json.emailSubject }}",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "id": "gmail-outreach",
+      "name": "Gmail Send Outreach",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [6600, -300],
+      "notes": "Sends personalized outreach email"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "TalentMonkeys Leads",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.Email }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Gesendet",
+            "Letzter Kontakt": "={{ $now.toFormat('yyyy-MM-dd') }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-update-sent",
+      "name": "Google Sheets Update Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [6820, -300],
+      "notes": "Updates lead status to 'Gesendet'"
+    },
+    {
+      "parameters": {},
+      "id": "no-op-skip",
+      "name": "No Operation",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1760, 400],
+      "notes": "Skipped - Less than 50 employees"
+    },
+    {
+      "parameters": {},
+      "id": "no-op-no-hr",
+      "name": "No Operation (No HR)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2420, 300],
+      "notes": "Skipped - No HR contact found"
+    },
+    {
+      "parameters": {},
+      "id": "no-op-no-email",
+      "name": "No Operation (No Email)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3080, 200],
+      "notes": "Skipped - No email found"
+    },
+    {
+      "parameters": {},
+      "id": "no-op-duplicate",
+      "name": "No Operation (Duplicate)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3740, 100],
+      "notes": "Skipped - Contacted in last 30 days"
+    },
+    {
+      "parameters": {},
+      "id": "no-op-no-approved",
+      "name": "No Operation (No Approved)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [5720, 0],
+      "notes": "Skipped - No approved leads"
+    },
+    {
+      "parameters": {},
+      "id": "no-op-outside-hours",
+      "name": "No Operation (Outside Hours)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [6160, -100],
+      "notes": "Scheduled for next business day"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Category Rotation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Category Rotation": {
+      "main": [
+        [
+          {
+            "node": "Split Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Queries": {
+      "main": [
+        [
+          {
+            "node": "Serper Job Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serper Job Search": {
+      "main": [
+        [
+          {
+            "node": "Parse & Filter Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Filter Jobs": {
+      "main": [
+        [
+          {
+            "node": "Loop Apollo Org",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Apollo Org": {
+      "main": [
+        [
+          {
+            "node": "Apollo Org Enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Limit 50",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Org Enrichment": {
+      "main": [
+        [
+          {
+            "node": "IF >= 50 Employees",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF >= 50 Employees": {
+      "main": [
+        [
+          {
+            "node": "Apollo People Search",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo People Search": {
+      "main": [
+        [
+          {
+            "node": "Merge People Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge People Data": {
+      "main": [
+        [
+          {
+            "node": "IF HR Contact Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF HR Contact Found": {
+      "main": [
+        [
+          {
+            "node": "Apollo Contact Match",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation (No HR)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Contact Match": {
+      "main": [
+        [
+          {
+            "node": "Finalize Contact Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Contact Data": {
+      "main": [
+        [
+          {
+            "node": "IF Email Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Email Exists": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation (No Email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Lookup": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate": {
+      "main": [
+        [
+          {
+            "node": "IF Should Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Should Contact": {
+      "main": [
+        [
+          {
+            "node": "Clean Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation (Duplicate)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Data": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Append": {
+      "main": [
+        [
+          {
+            "node": "Loop Apollo Org",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation": {
+      "main": [
+        [
+          {
+            "node": "Loop Apollo Org",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation (No HR)": {
+      "main": [
+        [
+          {
+            "node": "Loop Apollo Org",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation (No Email)": {
+      "main": [
+        [
+          {
+            "node": "Loop Apollo Org",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation (Duplicate)": {
+      "main": [
+        [
+          {
+            "node": "Loop Apollo Org",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit 50": {
+      "main": [
+        [
+          {
+            "node": "Build Approval Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Approval Email": {
+      "main": [
+        [
+          {
+            "node": "Gmail Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Approval Request": {
+      "main": [
+        [
+          {
+            "node": "Gmail Trigger Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger Reply": {
+      "main": [
+        [
+          {
+            "node": "Parse Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Reply": {
+      "main": [
+        [
+          {
+            "node": "Filter Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Approved": {
+      "main": [
+        [
+          {
+            "node": "IF Has Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Has Approved": {
+      "main": [
+        [
+          {
+            "node": "Spam Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation (No Approved)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spam Check": {
+      "main": [
+        [
+          {
+            "node": "IF Can Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Can Send": {
+      "main": [
+        [
+          {
+            "node": "Wait Random Delay",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation (Outside Hours)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Random Delay": {
+      "main": [
+        [
+          {
+            "node": "Personalize Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personalize Email": {
+      "main": [
+        [
+          {
+            "node": "Gmail Send Outreach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Send Outreach": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Update Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "",
+    "timezone": "Europe/Vienna",
+    "executionTimeout": 1800
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Lead Generation"
+    },
+    {
+      "name": "TalentMonkeys"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-29T00:00:00.000Z",
+  "versionId": "1"
+}
