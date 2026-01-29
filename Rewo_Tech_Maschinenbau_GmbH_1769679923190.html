@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rewo-Tech Maschinenbau GmbH - Investment Memorandum</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-navy: #002d62;
+            --accent-gold: #b3a369;
+            --text-slate: #2c3e50;
+            --background-light: #f8f9fa;
+            --border-gray: #d1d1d1;
+            --risk-red: #c0392b;
+            --success-green: #27ae60;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: var(--text-slate);
+            line-height: 1.6;
+            background: white;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .page-section {
+            min-height: 100vh;
+            padding: 60px 40px;
+            position: relative;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 40px;
+            right: 40px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* COVER PAGE */
+        .cover {
+            background: var(--primary-navy);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0;
+        }
+
+        .confidential-header {
+            position: absolute;
+            top: 40px;
+            font-size: 12px;
+            color: var(--accent-gold);
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .cover h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 3.5rem;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .gold-line {
+            width: 200px;
+            height: 3px;
+            background: var(--accent-gold);
+            margin: 30px 0;
+        }
+
+        .cover h2 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+
+        .cover .date {
+            font-size: 1.1rem;
+            color: var(--accent-gold);
+            margin-bottom: 80px;
+        }
+
+        .exit-intelligence-footer {
+            position: absolute;
+            bottom: 40px;
+            font-size: 14px;
+            color: var(--accent-gold);
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* SECTION HEADERS */
+        .section-header {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            color: var(--primary-navy);
+        }
+
+        .section-number {
+            color: var(--accent-gold);
+            font-weight: 400;
+        }
+
+        /* EXECUTIVE SUMMARY */
+        .hero-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .exit-probability-box {
+            background: linear-gradient(135deg, var(--primary-navy), #0f4a87);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .exit-probability-box .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .exit-probability-box .value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        .key-metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .metric-card {
+            background: var(--background-light);
+            padding: 25px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid var(--accent-gold);
+        }
+
+        .metric-card .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .metric-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-navy);
+        }
+
+        .investment-thesis {
+            background: white;
+            border: 2px solid var(--border-gray);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 40px 0;
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        /* COMPANY PROFILE TABLE */
+        .company-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .company-table th,
+        .company-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-gray);
+        }
+
+        .company-table th {
+            background: var(--primary-navy);
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .company-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* FINANCIAL BOXES */
+        .financial-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .financial-box {
+            background: white;
+            border: 2px solid var(--border-gray);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .financial-box .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .financial-box .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-navy);
+        }
+
+        .growth-indicators {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .growth-box {
+            background: var(--background-light);
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .growth-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-gray);
+        }
+
+        .growth-item:last-child {
+            border-bottom: none;
+        }
+
+        .growth-positive {
+            color: var(--success-green);
+            font-weight: 700;
+        }
+
+        .growth-negative {
+            color: var(--risk-red);
+            font-weight: 700;
+        }
+
+        /* EXIT INTELLIGENCE */
+        .exit-hero {
+            text-align: center;
+            margin: 50px 0;
+        }
+
+        .exit-score-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-navy), var(--accent-gold));
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 30px;
+            color: white;
+        }
+
+        .exit-score-circle .score {
+            font-size: 3.5rem;
+            font-weight: 700;
+        }
+
+        .exit-score-circle .label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .probability-boxes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 50px 0;
+        }
+
+        .probability-box {
+            background: white;
+            border: 3px solid var(--accent-gold);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .probability-box .timeframe {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .probability-box .percentage {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--primary-navy);
+        }
+
+        .score-breakdown {
+            margin: 40px 0;
+        }
+
+        .score-item {
+            margin: 20px 0;
+        }
+
+        .score-bar {
+            background: var(--border-gray);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-navy), var(--accent-gold));
+            transition: width 0.3s ease;
+        }
+
+        /* SIGNALS */
+        .signals-section {
+            margin: 40px 0;
+        }
+
+        .signal-item {
+            background: white;
+            border-left: 4px solid var(--accent-gold);
+            padding: 15px 20px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .signal-critical {
+            border-left-color: var(--risk-red);
+        }
+
+        .signal-strong {
+            border-left-color: #e67e22;
+        }
+
+        /* RISK ASSESSMENT */
+        .risk-item {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid var(--border-gray);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .risk-critical {
+            border-left-color: var(--risk-red);
+            background: #fdf2f2;
+        }
+
+        .risk-high {
+            border-left-color: #e67e22;
+            background: #fef9f2;
+        }
+
+        .risk-medium {
+            border-left-color: #f1c40f;
+            background: #fffdf2;
+        }
+
+        .risk-label {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .label-critical {
+            background: var(--risk-red);
+            color: white;
+        }
+
+        .label-high {
+            background: #e67e22;
+            color: white;
+        }
+
+        .label-medium {
+            background: #f1c40f;
+            color: #333;
+        }
+
+        /* APPROACH STRATEGY */
+        .strategy-box {
+            background: linear-gradient(135deg, var(--primary-navy), #0f4a87);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .approach-script {
+            background: var(--background-light);
+            border-left: 4px solid var(--accent-gold);
+            padding: 25px;
+            margin: 30px 0;
+            font-style: italic;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .next-steps {
+            counter-reset: step-counter;
+        }
+
+        .step-item {
+            counter-increment: step-counter;
+            position: relative;
+            padding: 15px 0 15px 50px;
+            border-bottom: 1px solid var(--border-gray);
+        }
+
+        .step-item:before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 15px;
+            background: var(--accent-gold);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        @media print {
+            .page-section {
+                page-break-after: always;
+                min-height: auto;
+            }
+            .cover {
+                page-break-after: always;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-metrics,
+            .key-metrics-grid,
+            .financial-grid,
+            .probability-boxes {
+                grid-template-columns: 1fr;
+            }
+            .page-section {
+                padding: 40px 20px;
+            }
+            .cover h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SECTION 1: COVER PAGE -->
+<section class="page-section cover">
+    <div class="confidential-header">STRICTLY PRIVATE & CONFIDENTIAL</div>
+    
+    <h1>Project Rewo-Tech<br>Maschinenbau GmbH</h1>
+    
+    <div class="gold-line"></div>
+    
+    <h2>Investment Memorandum</h2>
+    
+    <div class="date">29. Januar 2026</div>
+    
+    <div class="exit-intelligence-footer">Exit Intelligence Analysis</div>
+</section>
+
+<!-- SECTION 2: EXECUTIVE SUMMARY -->
+<section class="page-section">
+    <div class="container">
+        <h2 class="section-header"><span class="section-number">01</span> | Executive Summary</h2>
+        
+        <div class="hero-metrics">
+            <div class="exit-probability-box">
+                <div class="label">Exit-Wahrscheinlichkeit 12 Monate</div>
+                <div class="value">25%</div>
+            </div>
+            <div class="exit-probability-box">
+                <div class="label">Exit-Wahrscheinlichkeit 24 Monate</div>
+                <div class="value">40%</div>
+            </div>
+        </div>
+        
+        <div class="key-metrics-grid">
+            <div class="metric-card">
+                <div class="label">Jahresumsatz</div>
+                <div class="value">€9.7M</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Mitarbeiter</div>
+                <div class="value">33</div>
+            </div>
+            <div class="metric-card">
+                <div class="label">Exit Intelligence Score</div>
+                <div class="value">21/100</div>
+            </div>
+        </div>
+        
+        <div class="investment-thesis">
+            <h3 style="color: var(--primary-navy); margin-bottom: 15px;">Investment Thesis</h3>
+            <p>Wolfgang Reisinger steht als 56-jähriger Inhaber vor strategischen Entscheidungen bezüglich der Zukunft seines Unternehmens. Mit einem stabilen Maschinenbau-Geschäft und solider Eigenkapitalquote von 32.7% bietet Rewo-Tech eine interessante Akquisitionsmöglichkeit. Der Exit Intelligence Score von 21/100 deutet auf mittelfristige Verkaufsbereitschaft hin, verstärkt durch das Fehlen eines identifizierten Nachfolgers.</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <span>Confidential - Rewo-Tech Maschinenbau GmbH</span>
+        <span>Page 2</span>
+    </div>
+</section>
+
+<!-- SECTION 3: COMPANY PROFILE -->
+<section class="page-section">
+    <div class="container">
+        <h2 class="section-header"><span class="section-number">02</span> | Company Profile</h2>
+        
+        <table class="company-table">
+            <thead>
+                <tr>
+                    <th>Unternehmensdetails</th>
+                    <th>Information</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Firmenname</strong></td>
+                    <td>Rewo-Tech Maschinenbau GmbH</td>
+                </tr>
+                <tr>
+                    <td><strong>Inhaber/Geschäftsführer</strong></td>
+                    <td>Wolfgang Reisinger (56 Jahre)</td>
+                </tr>
+                <tr>
+                    <td><strong>Standort</strong></td>
+                    <td>Kraußstraße 7, 4020 Linz, Österreich</td>
+                </tr>
+                <tr>
+                    <td><strong>Branche</strong></td>
+                    <td>Mechanical Engineering</td>
+                </tr>
+                <tr>
+                    <td><strong>Rechtsform</strong></td>
+                    <td>GmbH</td>
+                </tr>
+                <tr>
+                    <td><strong>Gründungsjahr</strong></td>
+                    <td>2013</td>
+                </tr>
+                <tr>
+                    <td><strong>Unternehmensalter</strong></td>
+                    <td>13 Jahre</td>
+                </tr>
+                <tr>
+                    <td><strong>Website</strong></td>
+                    <td>http://rewotech.at/</td>
+                </tr>
+                <tr>
+                    <td><strong>E-Mail</strong></td>
+                    <td>office@rewo-tech.at</td>
+                </tr>
+                <tr>
+                    <td><strong>Handelsregister</strong></td>
+                    <td>399601z</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 40px;">
+            <h3 style="color: var(--primary-navy); margin-bottom: 15px;">Branchenprofil</h3>
+            <p>Rewo-Tech operiert im Bereich Maschinenbau, einer traditionellen österreichischen Industriesparte mit stabiler Nachfrage. Der Standort Linz bietet strategische Vorteile durch die industrielle Infrastruktur und Nähe zu wichtigen europäischen Märkten.</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <span>Confidential - Rewo-Tech Maschinenbau GmbH</span>
+        <span>Page 3</span>
+    </div>
+</section>
+
+<!-- SECTION 4: FINANCIAL ANALYSIS -->
+<section class="page-section">
+    <div class="container">
+        <h2 class="section-header"><span class="section-number">03</span> | Financial Analysis</h2>
+        
+        <div class="financial-grid">
+            <div class="financial-box">
+                <div class="label">Jahresumsatz</div>
+                <div class="value">€9.7M</div>
+            </div>
+            <div class="financial-box">
+                <div class="label">EBITDA</div>
+                <div class="value">€0.5M</div>
+            </div>
+            <div class="financial-box">
+                <div class="label">Eigenkapital</div>
+                <div class="value">€0.9M</div>
+            </div>
+            <div class="financial-box">
+                <div class="label">EK-Quote</div>
+                <div class="value">32.7%</div>
+            </div>
+        </div>
+        
+        <div class="growth-indicators">
+            <div class="growth-box">
+                <h3 style="color: var(--primary-navy); margin-bottom: 20px;">Wachstumstrends</h3>
+                <div class="growth-item">
+                    <span>Umsatzwachstum 1J</span>
+                    <span class="growth-negative">-3%</span>
+                </div>
+                <div class="growth-item">
+                    <span>Umsatzwachstum 3J</span>
+                    <span class="growth-positive">0.7%</span>
+                </div>
+                <div class="growth-item">
+                    <span>Gewinnwachstum 1J</span>
+                    <span class="growth-positive">146.7%</span>
+                </div>
+                <div class="growth-item">
+                    <span>MA-Entwicklung 1J</span>
+                    <span class="growth-positive">13.8%</span>
+                </div>
+            </div>
+            
+            <div class="growth-box">
+                <h3 style="color: var(--primary-navy); margin-bottom: 20px;">Bilanzstruktur</h3>
+                <div class="growth-item">
+                    <span>Bilanzsumme</span>
+                    <span>€2.6M</span>
+                </div>
+                <div class="growth-item">
+                    <span>Eigenkapitalquote</span>
+                    <span class="growth-positive">32.7%</span>
+                </div>
+                <div class="growth-item">
+                    <span>Mitarbeiter</span>
+                    <span>33</span>
+                </div>
+                <div class="growth-item">
+                    <span>EBITDA-Marge</span>
+                    <span>5.2%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <span>Confidential - Rewo-Tech Maschinenbau GmbH</span>
+        <span>Page 4</span>
+    </div>
+</section>
+
+<!-- SECTION 5: EXIT INTELLIGENCE -->
+<section class="page-section">
+    <div class="container">
+        <h2 class="section-header"><span class="section-number">04</span> | Exit Intelligence Analysis</h2>
+        
+        <div class="exit-hero">
+            <div class="exit-score-circle">
+                <div class="score">21</div>
+                <div class="label">Exit Intelligence Score</div>
+            </div>
+            <p style="font-size: 18px; color: var(--text-slate); margin-top: 20px;">
+                <strong>Status: NURTURE</strong> | Priorität: MEDIUM | Confidence: HIGH
+            </p>
+        </div>
+        
+        <div class="probability-boxes">
+            <div class="probability-box">
+                <div class="timeframe">12 Monate</div>
+                <div class="percentage">25%</div>
+                <p style="margin-top: 10px; color: #666;">Exit-Wahrscheinlichkeit</p>
+            </div>
+            <div class="probability-box">
+                <div class="timeframe">24 Monate</div>
+                <div class="percentage">40%</div>
+                <p style="margin-top: 10px; color: #666;">Exit-Wahrscheinlichkeit</p>
+            </div>
+        </div>
+        
+        <div class="score-breakdown">
+            <h3 style="color: var(--primary-navy); margin-bottom: 20px;">Score Breakdown</h3>
+            <div class="score-item">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Exit-Druck Score</span>
+                    <span style="font-weight: 700;">30/100</span>
+                </div>
+                <div class="score-bar">
+                    <div class="score-fill" style="width: 30%;"></div>
+                </div>
+            </div>
+            <div class="score-item">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Brautschau Score</span>
+                    <span style="font-weight: 700;">20/100</span>
+                </div>
+                <div class="score-bar">
+                    <div class="score-fill" style="width: 20%;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="signals-section">
+            <h3 style="color: var(--primary-navy); margin-bottom: 20px;">Identifizierte Signale</h3>
+            
+            <div class="signal-item signal-critical">
+                <strong>Planungsalter erreicht:</strong> 56 Jahre - typisches Alter für Nachfolgeplanung ohne identifizierten Nachfolger
+            </div>
+            
+            <div class="signal-item signal-strong">
+                <strong>Schuldenabbau:</strong> EK-Quote stieg um 13.9% - deutet auf Vorbereitung für Verkauf hin
+            </div>
+            
+            <div class="signal-item">
+                <strong>Psychologische Trigger:</strong> 56. Geburtstag - Überschreiten der klassischen Planungsgrenze für Nachfolge
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <span>Confidential - Rewo-Tech Maschinenbau GmbH</span>
+        <span>Page 5</span>
+    </div>
+</section>
+
+<!-- SECTION 6: RISK ASSESSMENT -->
+<section class="page-section">
+    <div class="container">
+        <h2 class="section-header"><span class="section-number">05</span> | Risk Assessment</h2>
+        
+        <div style="margin-bottom: 40px;">
+            <h3 style="color: var(--primary-navy); margin-bottom: 20px;">Identifizierte Risiken</h3>
+            
+            <div class="risk-item risk-critical">
+                <div class="risk-label label-critical">Critical</div>
+                <div><strong>Fehlende Nachfolge:</strong> Kein identifizierter Nachfolger im Unternehmen - kritisches Kontinuitätsrisiko</div>
+            </div>
+            
+            <div class="risk-item risk-high">
+                <div class="risk-label label-high">High</div>
+                <div><strong>Umsatzrückgang:</strong> Rückläufige Umsatzentwicklung (-3%) und stagnierende Gewinne deuten auf operative Herausforderungen hin</div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 40px;">
+            <h3 style="color: var(--primary-navy); margin-bottom: 20px;">Deal Parameter</h3>
+            
+            <div style="background: var(--background-light); padding: 25px; border-radius: 12px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; color: #666; margin-bottom: 5px;">Deal Qualität</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--primary-navy);">Speculative</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; color: #666; margin-bottom: 5px;">Empfohlene Struktur</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--primary-navy);">Hybrid</div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; color: #666; margin-bottom: 5px;">Kaufpreis-Indikation</div>
+                    <div style="font-size: 24px; font-weight: 700; color: var(--primary-navy);">2-3 Mio EUR</div>
+                    <div style="font-size: 14px; color: #666;">Bewertungsbasis: 4-6x EBITDA</div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 style="color: var(--primary-navy); margin-bottom: 20px;">Key Due Diligence Punkte</h3>
+            
+            <div style="background
