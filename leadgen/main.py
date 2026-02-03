@@ -68,7 +68,8 @@ class LeadGenPipeline:
         print(f"TALENTMONKEYS LEAD GENERATION")
         print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
         print(f"Min Salary: €{min_salary:,}")
-        print(f"Mode: {'Weekly (all categories)' if weekly_mode else f'Daily ({today_category[\"name\"]})'}")
+        category_name = today_category["name"]
+        print(f"Mode: {'Weekly (all categories)' if weekly_mode else f'Daily ({category_name})'}")
         print("=" * 60)
 
         # ================================================
