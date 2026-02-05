@@ -921,35 +921,14 @@
     {
       "parameters": {
         "mode": "append",
-        "options": {}
-      },
-      "id": "merge-serper-1-2",
-      "name": "Merge Serper 1+2",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [660, 200]
-    },
-    {
-      "parameters": {
-        "mode": "append",
-        "options": {}
-      },
-      "id": "merge-serper-all",
-      "name": "Merge Serper All",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [880, 300]
-    },
-    {
-      "parameters": {
-        "mode": "append",
+        "numberInputs": 4,
         "options": {}
       },
       "id": "merge-all-jobs",
       "name": "Merge All Job Sources",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
-      "position": [1100, 380]
+      "position": [880, 300]
     },
     {
       "parameters": {},
@@ -1034,7 +1013,7 @@
       "main": [
         [
           {
-            "node": "Merge Serper 1+2",
+            "node": "Merge All Job Sources",
             "type": "main",
             "index": 0
           }
@@ -1045,7 +1024,7 @@
       "main": [
         [
           {
-            "node": "Merge Serper 1+2",
+            "node": "Merge All Job Sources",
             "type": "main",
             "index": 1
           }
@@ -1056,31 +1035,9 @@
       "main": [
         [
           {
-            "node": "Merge Serper All",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Serper 1+2": {
-      "main": [
-        [
-          {
-            "node": "Merge Serper All",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Serper All": {
-      "main": [
-        [
-          {
             "node": "Merge All Job Sources",
             "type": "main",
-            "index": 0
+            "index": 2
           }
         ]
       ]
@@ -1142,7 +1099,7 @@
           {
             "node": "Merge All Job Sources",
             "type": "main",
-            "index": 1
+            "index": 3
           }
         ]
       ]
