@@ -55,7 +55,7 @@ class ApolloClient:
         return None
 
     def search_people(self, domain: str, titles: List[str] = None) -> List[Dict]:
-        """Search for people at an organization"""
+        """Search for people at an organization using the new API endpoint"""
         if titles is None:
             titles = HR_TITLES
 
@@ -65,7 +65,8 @@ class ApolloClient:
             "per_page": 5
         }
 
-        result = self._request("POST", "mixed_people/search", data)
+        # Use new API endpoint (mixed_people/search is deprecated)
+        result = self._request("POST", "mixed_people/api_search", data)
 
         if result and "people" in result:
             return result["people"]
@@ -78,7 +79,7 @@ class ApolloClient:
             "last_name": last_name,
             "organization_name": organization_name,
             "reveal_personal_emails": False,
-            "reveal_phone_number": True
+            "reveal_phone_number": False  # Phone requires webhook, skip for now
         }
 
         result = self._request("POST", "people/match", data)
@@ -119,6 +120,22 @@ class ApolloClient:
             return result["organizations"]
         return []
 
+    def bulk_reveal(self, person_ids: List[str]) -> List[Dict]:
+        """Reveal contact info for people using bulk_match endpoint"""
+        if not person_ids:
+            return []
+
+        data = {
+            "reveal_personal_emails": True,
+            "details": [{"id": pid} for pid in person_ids]
+        }
+
+        result = self._request("POST", "people/bulk_match", data)
+
+        if result and "matches" in result:
+            return result["matches"]
+        return []
+
     def get_company_with_hr_contact(self, domain: str, company_name: str = None) -> Optional[Dict]:
         """
         Full enrichment: Get company data + HR contact in one call
@@ -143,29 +160,42 @@ class ApolloClient:
             print(f"  No HR contacts found for {domain}")
             return None
 
-        # Get the first (most relevant) contact
-        hr_contact = people[0]
+        # Get person ID for revealing contact info
+        person_id = people[0].get("id")
+        if not person_id:
+            print(f"  No person ID for HR contact at {domain}")
+            return None
 
-        # Step 3: Get verified email/phone
-        verified = self.match_person(
-            hr_contact.get("first_name", ""),
-            hr_contact.get("last_name", ""),
-            org.get("name", company_name or domain)
-        )
+        # Step 3: Use bulk_match to reveal email (more reliable than people/match)
+        revealed = self.bulk_reveal([person_id])
 
-        if verified:
-            email = verified.get("email", hr_contact.get("email", ""))
-            email_verified = verified.get("email_status") == "verified"
-            phone = None
-            if verified.get("phone_numbers"):
-                phone = verified["phone_numbers"][0].get("sanitized_number")
-        else:
-            email = hr_contact.get("email", "")
-            email_verified = False
-            phone = None
+        if not revealed:
+            print(f"  Could not reveal contact info for {domain}")
+            return None
 
-        if not email:
-            print(f"  No email found for HR contact at {domain}")
+        hr_contact = revealed[0]
+        email = hr_contact.get("email", "")
+
+        # Check if email matches the company domain (person may have changed jobs)
+        if email and not email.endswith(f"@{domain}") and not email.endswith(domain.replace(".at", ".com")):
+            # Person may have changed jobs - check organization
+            contact_org = hr_contact.get("organization", {}).get("name", "").lower()
+            company_lower = (company_name or org.get("name", "")).lower()
+            if contact_org and company_lower not in contact_org and contact_org not in company_lower:
+                print(f"  Contact {hr_contact.get('name')} no longer at {company_name} (now at {contact_org})")
+                # Try next person if available
+                if len(people) > 1:
+                    person_id = people[1].get("id")
+                    revealed = self.bulk_reveal([person_id])
+                    if revealed:
+                        hr_contact = revealed[0]
+                        email = hr_contact.get("email", "")
+
+        # Build enriched lead data (even without email - LinkedIn is valuable too)
+        linkedin_url = hr_contact.get("linkedin_url", "")
+
+        if not email and not linkedin_url:
+            print(f"  No contact info found for {domain}")
             return None
 
         # Build enriched lead data
@@ -178,11 +208,11 @@ class ApolloClient:
             "linkedin_url": org.get("linkedin_url", ""),
             "hr_first_name": hr_contact.get("first_name", ""),
             "hr_last_name": hr_contact.get("last_name", ""),
-            "hr_full_name": f"{hr_contact.get('first_name', '')} {hr_contact.get('last_name', '')}".strip(),
+            "hr_full_name": hr_contact.get("name", f"{hr_contact.get('first_name', '')} {hr_contact.get('last_name', '')}").strip(),
             "hr_title": hr_contact.get("title", ""),
             "hr_email": email,
-            "hr_email_verified": email_verified,
-            "hr_phone": phone,
+            "hr_email_verified": hr_contact.get("email_status") == "verified",
+            "hr_phone": None,  # Phone requires webhook
             "hr_linkedin": hr_contact.get("linkedin_url", "")
         }
 
