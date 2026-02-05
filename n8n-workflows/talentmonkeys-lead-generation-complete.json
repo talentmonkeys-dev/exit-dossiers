@@ -540,42 +540,38 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.anthropic.com/v1/messages",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-20250514",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 4"
+        },
+        "messages": {
+          "values": [
             {
-              "name": "anthropic-version",
-              "value": "2023-06-01"
-            },
-            {
-              "name": "content-type",
-              "value": "application/json"
+              "content": "=Du bist ein erfahrener Recruiting-Berater bei TalentMonkeys, einer österreichischen Recruiting-Agentur.\n\nSchreibe eine kurze, persönliche Kaltakquise-Email an:\n- Name: {{ $json.hr_first_name }}\n- Titel: {{ $json.hr_title }}\n- Firma: {{ $json.company_name }}\n- Die Firma sucht gerade: {{ $json.job_title }}\n\nDie Email soll:\n1. Den Vornamen nutzen (\"Hallo {{ $json.hr_first_name }}\")\n2. Die offene Stelle erwähnen als Anlass\n3. TalentMonkeys als Lösung positionieren\n4. Kurz sein (max 100 Wörter)\n5. Einen klaren Call-to-Action haben\n6. Professionell aber freundlich klingen\n7. KEINE Emojis verwenden\n\nAntworte NUR mit der Email selbst, ohne Erklärungen. Format:\nBetreff: [Betreffzeile]\n\n[Email-Text]"
             }
           ]
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: 'claude-3-5-sonnet-20241022',\n  max_tokens: 1024,\n  messages: [{\n    role: 'user',\n    content: `Du bist ein erfahrener Recruiting-Berater bei TalentMonkeys, einer österreichischen Recruiting-Agentur.\n\nSchreibe eine kurze, persönliche Kaltakquise-Email an:\n- Name: ${$json.hr_first_name}\n- Titel: ${$json.hr_title}\n- Firma: ${$json.company_name}\n- Die Firma sucht gerade: ${$json.job_title}\n\nDie Email soll:\n1. Den Vornamen nutzen (\"Hallo ${$json.hr_first_name}\")\n2. Die offene Stelle erwähnen als Anlass\n3. TalentMonkeys als Lösung positionieren\n4. Kurz sein (max 100 Wörter)\n5. Einen klaren Call-to-Action haben\n6. Professionell aber freundlich klingen\n7. KEINE Emojis verwenden\n\nAntworte NUR mit der Email selbst, ohne Erklärungen. Format:\nBetreff: [Betreffzeile]\n\n[Email-Text]`\n  }]\n}) }}"
+        "options": {
+          "maxTokensToSample": 1024
+        }
       },
       "id": "claude-generate-message",
       "name": "Claude Generate Message",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.2,
       "position": [2420, 400],
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "claude-api",
-          "name": "Claude API"
+        "anthropicApi": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Parse Claude response and extract email\nconst response = $json;\nconst leadData = $node['Build Lead Data'].json;\n\nlet content = '';\nif (response.content && response.content[0]) {\n  content = response.content[0].text || '';\n}\n\n// Parse subject and body\nlet subject = '';\nlet body = '';\n\nconst subjectMatch = content.match(/Betreff:\\s*(.+?)\\n/);\nif (subjectMatch) {\n  subject = subjectMatch[1].trim();\n  body = content.replace(/Betreff:\\s*.+?\\n\\n?/, '').trim();\n} else {\n  // Fallback\n  subject = `Ihre offene Stelle: ${leadData.job_title}`;\n  body = content;\n}\n\n// Clean the job title for Instantly\nconst cleanJobTitle = leadData.job_title\n  .split(' - ')[0]\n  .split(' | ')[0]\n  .split(' bei ')[0]\n  .trim();\n\nreturn [{\n  json: {\n    ...leadData,\n    email_subject: subject,\n    email_body: body,\n    clean_job_title: cleanJobTitle,\n    generated_at: new Date().toISOString()\n  }\n}];"
+        "jsCode": "// Parse Claude response and extract email\nconst response = $json;\nconst leadData = $node['Build Lead Data'].json;\n\n// Native Anthropic node returns text directly or in response.text\nlet content = response.text || response.message?.content || '';\nif (response.content && response.content[0]) {\n  content = response.content[0].text || content;\n}\n\n// Parse subject and body\nlet subject = '';\nlet body = '';\n\nconst subjectMatch = content.match(/Betreff:\\s*(.+?)\\n/);\nif (subjectMatch) {\n  subject = subjectMatch[1].trim();\n  body = content.replace(/Betreff:\\s*.+?\\n\\n?/, '').trim();\n} else {\n  // Fallback\n  subject = `Ihre offene Stelle: ${leadData.job_title}`;\n  body = content;\n}\n\n// Clean the job title for Instantly\nconst cleanJobTitle = leadData.job_title\n  .split(' - ')[0]\n  .split(' | ')[0]\n  .split(' bei ')[0]\n  .trim();\n\nreturn [{\n  json: {\n    ...leadData,\n    email_subject: subject,\n    email_body: body,\n    clean_job_title: cleanJobTitle,\n    generated_at: new Date().toISOString()\n  }\n}];"
       },
       "id": "parse-claude-response",
       "name": "Parse Claude Response",
@@ -748,42 +744,38 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.anthropic.com/v1/messages",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-20250514",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 4"
+        },
+        "messages": {
+          "values": [
             {
-              "name": "anthropic-version",
-              "value": "2023-06-01"
-            },
-            {
-              "name": "content-type",
-              "value": "application/json"
+              "content": "=Du bist ein Recruiting-Berater bei TalentMonkeys.\n\nAnalysiere diese Email-Antwort und klassifiziere sie:\n\nAntwort von: {{ $node['Get Lead Context'].json.HR_Name || 'Unbekannt' }}\nFirma: {{ $node['Get Lead Context'].json.Company || 'Unbekannt' }}\nAntwort-Text:\n\"{{ $json.reply_text }}\"\n\nKlassifiziere als:\n1. POSITIV - Interesse an einem Gespräch/Meeting\n2. NEGATIV - Kein Interesse, Absage\n3. FRAGE - Hat Rückfragen, braucht mehr Info\n4. SPÄTER - Will später kontaktiert werden\n5. ABWESEND - Out of Office, Urlaub etc.\n\nSchreibe dann eine passende Antwort:\n- Bei POSITIV: Schlage einen Termin vor mit diesem Calendly-Link: https://calendly.com/flavio_1/meeting\n- Bei NEGATIV: Bedanke dich höflich und wünsche alles Gute\n- Bei FRAGE: Beantworte die Frage und biete Gespräch an\n- Bei SPÄTER: Bestätige und frage nach gutem Zeitpunkt\n- Bei ABWESEND: Keine Antwort nötig\n\nFormat:\nKLASSIFIKATION: [KATEGORIE]\n\nANTWORT:\n[Deine Antwort oder \"KEINE\" wenn nicht nötig]"
             }
           ]
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: 'claude-3-5-sonnet-20241022',\n  max_tokens: 1024,\n  messages: [{\n    role: 'user',\n    content: `Du bist ein Recruiting-Berater bei TalentMonkeys.\n\nAnalysiere diese Email-Antwort und klassifiziere sie:\n\nAntwort von: ${$node['Get Lead Context'].json.HR_Name || 'Unbekannt'}\nFirma: ${$node['Get Lead Context'].json.Company || 'Unbekannt'}\nAntwort-Text:\n\"${$json.reply_text}\"\n\nKlassifiziere als:\n1. POSITIV - Interesse an einem Gespräch/Meeting\n2. NEGATIV - Kein Interesse, Absage\n3. FRAGE - Hat Rückfragen, braucht mehr Info\n4. SPÄTER - Will später kontaktiert werden\n5. ABWESEND - Out of Office, Urlaub etc.\n\nSchreibe dann eine passende Antwort:\n- Bei POSITIV: Schlage einen Termin vor mit diesem Calendly-Link: https://calendly.com/flavio_1/meeting\n- Bei NEGATIV: Bedanke dich höflich und wünsche alles Gute\n- Bei FRAGE: Beantworte die Frage und biete Gespräch an\n- Bei SPÄTER: Bestätige und frage nach gutem Zeitpunkt\n- Bei ABWESEND: Keine Antwort nötig\n\nFormat:\nKLASSIFIKATION: [KATEGORIE]\n\nANTWORT:\n[Deine Antwort oder \"KEINE\" wenn nicht nötig]`\n  }]\n}) }}"
+        "options": {
+          "maxTokensToSample": 1024
+        }
       },
       "id": "claude-analyze-reply",
       "name": "Claude Analyze Reply",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.2,
       "position": [660, 1100],
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "claude-api",
-          "name": "Claude API"
+        "anthropicApi": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Parse Claude's reply analysis\nconst response = $json;\nconst replyData = $node['Parse Instantly Reply'].json;\nconst leadData = $node['Get Lead Context'].json;\n\nlet content = '';\nif (response.content && response.content[0]) {\n  content = response.content[0].text || '';\n}\n\n// Parse classification\nconst classMatch = content.match(/KLASSIFIKATION:\\s*(POSITIV|NEGATIV|FRAGE|SPÄTER|ABWESEND)/i);\nconst classification = classMatch ? classMatch[1].toUpperCase() : 'UNKNOWN';\n\n// Parse response\nconst responseMatch = content.match(/ANTWORT:\\s*([\\s\\S]+?)(?:$|KLASSIFIKATION)/i);\nlet replyResponse = responseMatch ? responseMatch[1].trim() : '';\n\n// Check if no response needed\nconst noResponse = replyResponse.toLowerCase().includes('keine') || classification === 'ABWESEND';\n\nreturn [{\n  json: {\n    classification: classification,\n    reply_response: replyResponse,\n    no_response_needed: noResponse,\n    lead_email: replyData.reply_email,\n    lead_name: leadData.HR_Name || '',\n    company: leadData.Company || '',\n    original_reply: replyData.reply_text\n  }\n}];"
+        "jsCode": "// Parse Claude's reply analysis\nconst response = $json;\nconst replyData = $node['Parse Instantly Reply'].json;\nconst leadData = $node['Get Lead Context'].json;\n\n// Native Anthropic node returns text directly or in response.text\nlet content = response.text || response.message?.content || '';\nif (response.content && response.content[0]) {\n  content = response.content[0].text || content;\n}\n\n// Parse classification\nconst classMatch = content.match(/KLASSIFIKATION:\\s*(POSITIV|NEGATIV|FRAGE|SPÄTER|ABWESEND)/i);\nconst classification = classMatch ? classMatch[1].toUpperCase() : 'UNKNOWN';\n\n// Parse response\nconst responseMatch = content.match(/ANTWORT:\\s*([\\s\\S]+?)(?:$|KLASSIFIKATION)/i);\nlet replyResponse = responseMatch ? responseMatch[1].trim() : '';\n\n// Check if no response needed\nconst noResponse = replyResponse.toLowerCase().includes('keine') || classification === 'ABWESEND';\n\nreturn [{\n  json: {\n    classification: classification,\n    reply_response: replyResponse,\n    no_response_needed: noResponse,\n    lead_email: replyData.reply_email,\n    lead_name: leadData.HR_Name || '',\n    company: leadData.Company || '',\n    original_reply: replyData.reply_text\n  }\n}];"
       },
       "id": "parse-reply-analysis",
       "name": "Parse Reply Analysis",
