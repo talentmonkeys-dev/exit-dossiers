@@ -97,7 +97,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/runs?token={{$credentials.apifyApi.apiKey}}",
+        "url": "https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/runs?token={{$env.APIFY_API_KEY}}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n  urls: [\n    'https://www.linkedin.com/jobs/search/?keywords=' + encodeURIComponent($node['Category Rotation'].json.today_queries[0]) + '&location=Austria&f_TPR=r604800',\n    'https://www.linkedin.com/jobs/search/?keywords=' + encodeURIComponent($node['Category Rotation'].json.today_queries[1]) + '&location=Austria&f_TPR=r604800'\n  ],\n  maxItems: 30\n}) }}"
@@ -127,7 +127,7 @@
     },
     {
       "parameters": {
-        "url": "=https://api.apify.com/v2/actor-runs/{{ $node['Apify Start LinkedIn Scrape'].json.data.id }}?token={{$credentials.apifyApi.apiKey}}",
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $node['Apify Start LinkedIn Scrape'].json.data.id }}?token={{$env.APIFY_API_KEY}}",
         "options": {}
       },
       "id": "apify-check-status",
@@ -173,7 +173,7 @@
     },
     {
       "parameters": {
-        "url": "=https://api.apify.com/v2/datasets/{{ $node['Check Apify Status'].json.data.defaultDatasetId }}/items?token={{$credentials.apifyApi.apiKey}}",
+        "url": "=https://api.apify.com/v2/datasets/{{ $node['Check Apify Status'].json.data.defaultDatasetId }}/items?token={{$env.APIFY_API_KEY}}",
         "options": {}
       },
       "id": "apify-get-results",
