@@ -1,13 +1,9 @@
 """
 TalentMonkeys Lead Generation - Job Scraper
 
-Scrapes REAL job postings from Google Jobs with salary filtering.
-Uses Serper's Google Jobs API which returns structured data including:
-- Job title
-- Company name
-- Salary (when available)
-- Location
-- Job description
+Scrapes REAL job postings from multiple sources:
+1. Google Search (via Serper) targeting Austrian job sites
+2. LinkedIn Jobs (via Apify) - optional, takes longer but has better data
 """
 import requests
 import re
@@ -552,6 +548,73 @@ class JobScraper:
             print(f"    Found {len(jobs)} jobs")
 
         return all_jobs
+
+    def search_with_apify(self,
+                          queries: List[str],
+                          location: str = "Austria",
+                          max_items: int = 20,
+                          timeout_minutes: int = 5) -> List[Dict]:
+        """
+        Search LinkedIn via Apify (takes longer but better data).
+        Use for weekly batch runs, not real-time searches.
+        """
+        try:
+            from apify_client import ApifyJobScraper
+            apify = ApifyJobScraper()
+            print(f"  Starting Apify LinkedIn scrape...")
+            jobs = apify.scrape_and_wait(queries, location, max_items, timeout_minutes)
+            return jobs
+        except ImportError:
+            print("  Apify client not available")
+            return []
+        except Exception as e:
+            print(f"  Apify error: {e}")
+            return []
+
+    def search_all_sources(self,
+                           queries: List[str],
+                           location: str = "Austria",
+                           min_salary: int = 65000,
+                           use_apify: bool = False,
+                           limit: int = 50) -> List[Dict]:
+        """
+        Search all available sources and combine results.
+
+        Args:
+            queries: Job search queries
+            location: Location filter
+            min_salary: Minimum salary
+            use_apify: If True, also search LinkedIn via Apify (slower)
+            limit: Maximum total results
+        """
+        all_jobs = []
+        seen_companies = set()
+
+        # Source 1: Google Search (Serper) - fast
+        print("\n[Serper] Searching Google...")
+        serper_jobs = self.search_multiple_categories(queries, location, min_salary, 10)
+        for job in serper_jobs:
+            company_key = job["company_name"].lower().strip()
+            if company_key not in seen_companies:
+                seen_companies.add(company_key)
+                all_jobs.append(job)
+        print(f"[Serper] Found {len(serper_jobs)} companies")
+
+        # Source 2: LinkedIn (Apify) - slow but better data
+        if use_apify and len(all_jobs) < limit:
+            print("\n[Apify] Searching LinkedIn (this may take a few minutes)...")
+            apify_jobs = self.search_with_apify(queries[:2], location, max_items=20)
+            added = 0
+            for job in apify_jobs:
+                company_key = job["company_name"].lower().strip()
+                if company_key not in seen_companies:
+                    seen_companies.add(company_key)
+                    all_jobs.append(job)
+                    added += 1
+            print(f"[Apify] Added {added} new companies")
+
+        print(f"\n[Total] {len(all_jobs)} unique companies found")
+        return all_jobs[:limit]
 
 
 def test_job_scraper():

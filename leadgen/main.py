@@ -51,7 +51,8 @@ class LeadGenPipeline:
             limit: int = MAX_LEADS_PER_DAY,
             weekly_mode: bool = False,
             dry_run: bool = False,
-            send_approval: bool = True):
+            send_approval: bool = True,
+            use_apify: bool = False):
         """
         Run the complete pipeline
 
@@ -61,6 +62,7 @@ class LeadGenPipeline:
             weekly_mode: Use all categories instead of daily rotation
             dry_run: Don't send emails, just search and show results
             send_approval: Send approval email first (vs direct outreach)
+            use_apify: Also search LinkedIn via Apify (slower but better data)
         """
         today_category, next_category = get_todays_category()
 
@@ -75,24 +77,27 @@ class LeadGenPipeline:
         # ================================================
         # STEP 1: SCRAPE JOBS
         # ================================================
-        print(f"\n[STEP 1] Scraping Google Jobs (€{min_salary//1000}K+)...")
+        sources = "Google + LinkedIn (Apify)" if use_apify else "Google"
+        print(f"\n[STEP 1] Scraping Jobs via {sources} (€{min_salary//1000}K+)...")
 
         if weekly_mode:
             # Use queries from all categories
             all_queries = []
             for cat in CATEGORIES:
                 all_queries.extend(cat["queries"][:2])  # 2 queries per category
-            jobs = self.scraper.search_multiple_categories(
+            jobs = self.scraper.search_all_sources(
                 queries=all_queries,
                 min_salary=min_salary,
-                limit_per_query=10
+                use_apify=use_apify,
+                limit=limit * 2
             )
         else:
             # Use today's category
-            jobs = self.scraper.search_multiple_categories(
+            jobs = self.scraper.search_all_sources(
                 queries=today_category["queries"],
                 min_salary=min_salary,
-                limit_per_query=15
+                use_apify=use_apify,
+                limit=limit * 2
             )
 
         print(f"\n✓ Found {len(jobs)} jobs matching criteria")
@@ -312,6 +317,7 @@ def main():
     parser.add_argument("--no-approval", action="store_true", help="Skip approval, send directly")
     parser.add_argument("--min-salary", type=int, default=65000, help="Min salary in EUR (default: 65000)")
     parser.add_argument("--limit", type=int, default=MAX_LEADS_PER_DAY, help="Max leads (default: 50)")
+    parser.add_argument("--apify", action="store_true", help="Also search LinkedIn via Apify (slower, better data)")
 
     args = parser.parse_args()
 
@@ -325,7 +331,8 @@ def main():
             limit=args.limit,
             weekly_mode=args.weekly,
             dry_run=args.dry_run,
-            send_approval=not args.no_approval
+            send_approval=not args.no_approval,
+            use_apify=args.apify
         )
 
 

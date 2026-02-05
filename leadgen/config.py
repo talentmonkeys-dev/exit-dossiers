@@ -4,6 +4,7 @@ TalentMonkeys Lead Generation - Configuration
 IMPORTANT: Set your API keys as environment variables or in a .env file:
     export SERPER_API_KEY=your_key
     export APOLLO_API_KEY=your_key
+    export APIFY_API_KEY=your_key        # Optional: for LinkedIn scraping
     export GOOGLE_CLIENT_ID=your_client_id
     export GOOGLE_CLIENT_SECRET=your_client_secret
 """
