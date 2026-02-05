@@ -208,7 +208,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Combine results from all Serper searches and Apify\nconst serper1 = $node['Serper Search 1'].json?.organic || [];\nconst serper2 = $node['Serper Search 2'].json?.organic || [];\nconst serper3 = $node['Serper Search 3'].json?.organic || [];\nconst apifyResults = $node['Get Apify Results'].json || [];\n\n// Blacklist of companies and job portals to exclude\nconst blacklist = [\n  'PSA', 'Drees & Sommer', 'LKW Walter', 'Cyan Security', 'Schmachtl',\n  'Netconomy', 'Lisec', 'Binderholz', 'Post', 'Still', 'KUKA', 'Kotanyi',\n  'Rail Power Systems', 'Doka', 'Hobex', 'Mubea', 'XXXL', 'Ortner', 'Axians',\n  'ARAG', 'Planradar', 'Haberkorn', 'Tractive', 'Bühler', 'Salesianer',\n  'Lasselsberger', 'Ebcont', 'Waterdrop', 'Hoerbiger', 'Verbund', 'Uniqa',\n  'RBI', 'Bawag', 'Bitpanda', 'Dynatrace', 'Storyblok', 'IKEA', 'Mjam'\n];\n\nconst recruitingKeywords = [\n  'recruiting', 'staffing', 'personalberatung', 'headhunter',\n  'hr consulting', 'personaldienstleister', 'zeitarbeit',\n  'personalvermittlung', 'executive search', 'randstad', 'hays',\n  'michael page', 'robert half', 'adecco', 'manpower'\n];\n\nconst jobPortals = [\n  'indeed.com', 'stepstone', 'karriere.at', 'monster.', 'glassdoor',\n  'linkedin.com/jobs', 'xing.com/jobs', 'jobs.at', 'willhaben.at/jobs'\n];\n\nfunction isBlacklisted(company) {\n  if (!company) return true;\n  const lower = company.toLowerCase();\n  return blacklist.some(bl => lower.includes(bl.toLowerCase()));\n}\n\nfunction isRecruitingAgency(text) {\n  if (!text) return false;\n  const lower = text.toLowerCase();\n  return recruitingKeywords.some(kw => lower.includes(kw));\n}\n\nfunction isJobPortal(url) {\n  if (!url) return false;\n  const lower = url.toLowerCase();\n  return jobPortals.some(portal => lower.includes(portal));\n}\n\nfunction extractCompanyFromUrl(url) {\n  if (!url) return null;\n  \n  // Personio pattern: company.jobs.personio.com\n  const personioMatch = url.match(/([a-z0-9-]+)\\.jobs\\.personio\\.(?:com|de)/i);\n  if (personioMatch) {\n    return personioMatch[1].replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());\n  }\n  \n  // karriere.at pattern: firma/companyname\n  const karriereMatch = url.match(/karriere\\.at\\/(?:firma|f)\\/([a-z0-9-]+)/i);\n  if (karriereMatch) {\n    return karriereMatch[1].replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());\n  }\n  \n  return null;\n}\n\nfunction cleanCompanyName(name) {\n  if (!name) return '';\n  return name\n    .replace(/\\s*(GmbH|AG|SE|KG|OG|e\\.U\\.|& Co\\.?|Corp\\.?|Inc\\.?|Ltd\\.?)\\s*/gi, '')\n    .trim()\n    .replace(/[.,\\-]+$/, '');\n}\n\nfunction guessDomain(company) {\n  if (!company) return '';\n  const clean = company.toLowerCase()\n    .replace(/\\s*(gmbh|ag|se|kg|& co\\.?|inc\\.?|ltd\\.?)\\s*/gi, '')\n    .replace(/[^a-z0-9]/g, '');\n  return clean ? `${clean}.at` : '';\n}\n\nfunction parseSalary(text) {\n  if (!text) return null;\n  const clean = text.toLowerCase().replace(/[.,]/g, '');\n  \n  // Look for numbers like 65000, 65.000, 65k\n  const match = clean.match(/(\\d{2,3})[\\s]?(\\d{3})/);\n  if (match) return parseInt(match[1]) * 1000 + parseInt(match[2]);\n  \n  const kMatch = clean.match(/(\\d{2,3})k/);\n  if (kMatch) return parseInt(kMatch[1]) * 1000;\n  \n  return null;\n}\n\nconst jobs = [];\nconst seenCompanies = new Set();\n\n// Process Serper results\nfor (const result of [...serper1, ...serper2, ...serper3]) {\n  const url = result.link || '';\n  const title = result.title || '';\n  const snippet = result.snippet || '';\n  \n  // Skip job portals\n  if (isJobPortal(url)) continue;\n  \n  // Extract company\n  let company = extractCompanyFromUrl(url);\n  if (!company && result.source) company = result.source;\n  if (!company) continue;\n  \n  // Skip duplicates, blacklisted, recruiting agencies\n  const companyKey = company.toLowerCase();\n  if (seenCompanies.has(companyKey)) continue;\n  if (isBlacklisted(company)) continue;\n  if (isRecruitingAgency(company + ' ' + title)) continue;\n  \n  seenCompanies.add(companyKey);\n  \n  jobs.push({\n    job_title: title.split(' - ')[0].split(' | ')[0].trim(),\n    company_name: company,\n    company_name_clean: cleanCompanyName(company),\n    company_domain: guessDomain(company),\n    location: 'Austria',\n    job_url: url,\n    salary_text: snippet.match(/€[\\d.,]+/)?.[0] || '',\n    salary_num: parseSalary(snippet),\n    source: 'Google (Serper)',\n    posted_date: new Date().toISOString().split('T')[0]\n  });\n}\n\n// Process Apify results\nif (Array.isArray(apifyResults)) {\n  for (const job of apifyResults) {\n    const company = job.companyName || '';\n    if (!company) continue;\n    \n    const companyKey = company.toLowerCase();\n    if (seenCompanies.has(companyKey)) continue;\n    if (isBlacklisted(company)) continue;\n    if (isRecruitingAgency(company + ' ' + job.title)) continue;\n    \n    seenCompanies.add(companyKey);\n    \n    jobs.push({\n      job_title: job.title || '',\n      company_name: company,\n      company_name_clean: cleanCompanyName(company),\n      company_domain: guessDomain(company),\n      location: job.location || 'Austria',\n      job_url: job.jobUrl || '',\n      salary_text: job.salary || '',\n      salary_num: parseSalary(job.salary),\n      source: 'LinkedIn (Apify)',\n      company_linkedin: job.companyUrl || '',\n      applicants: job.applicantsCount || '',\n      posted_date: job.postedDate || new Date().toISOString().split('T')[0]\n    });\n  }\n}\n\n// Filter for salary >= €65,000\nconst filtered = jobs.filter(job => {\n  // If salary is known, must be >= 65000\n  if (job.salary_num && job.salary_num < 65000) return false;\n  return true;\n});\n\nconsole.log(`Found ${jobs.length} jobs, ${filtered.length} after salary filter`);\n\n// Return each job as separate item\nreturn filtered.map(job => ({ json: job }));"
+        "jsCode": "// Combine results from all merged job sources\n// Data comes from Merge node - each item has source info\nconst allItems = $input.all();\n\n// Separate Serper results (have 'organic' array) from Apify results\nconst serperResults = [];\nconst apifyResults = [];\n\nfor (const item of allItems) {\n  const data = item.json;\n  if (data.organic) {\n    // This is a Serper result\n    serperResults.push(...data.organic);\n  } else if (data.companyName || data.title) {\n    // This is an Apify LinkedIn job result\n    apifyResults.push(data);\n  } else if (Array.isArray(data)) {\n    // Apify results might come as array\n    apifyResults.push(...data);\n  }\n}\n\n// Blacklist of companies and job portals to exclude\nconst blacklist = [\n  'PSA', 'Drees & Sommer', 'LKW Walter', 'Cyan Security', 'Schmachtl',\n  'Netconomy', 'Lisec', 'Binderholz', 'Post', 'Still', 'KUKA', 'Kotanyi',\n  'Rail Power Systems', 'Doka', 'Hobex', 'Mubea', 'XXXL', 'Ortner', 'Axians',\n  'ARAG', 'Planradar', 'Haberkorn', 'Tractive', 'Bühler', 'Salesianer',\n  'Lasselsberger', 'Ebcont', 'Waterdrop', 'Hoerbiger', 'Verbund', 'Uniqa',\n  'RBI', 'Bawag', 'Bitpanda', 'Dynatrace', 'Storyblok', 'IKEA', 'Mjam'\n];\n\nconst recruitingKeywords = [\n  'recruiting', 'staffing', 'personalberatung', 'headhunter',\n  'hr consulting', 'personaldienstleister', 'zeitarbeit',\n  'personalvermittlung', 'executive search', 'randstad', 'hays',\n  'michael page', 'robert half', 'adecco', 'manpower'\n];\n\nconst jobPortals = [\n  'indeed.com', 'stepstone', 'karriere.at', 'monster.', 'glassdoor',\n  'linkedin.com/jobs', 'xing.com/jobs', 'jobs.at', 'willhaben.at/jobs'\n];\n\nfunction isBlacklisted(company) {\n  if (!company) return true;\n  const lower = company.toLowerCase();\n  return blacklist.some(bl => lower.includes(bl.toLowerCase()));\n}\n\nfunction isRecruitingAgency(text) {\n  if (!text) return false;\n  const lower = text.toLowerCase();\n  return recruitingKeywords.some(kw => lower.includes(kw));\n}\n\nfunction isJobPortal(url) {\n  if (!url) return false;\n  const lower = url.toLowerCase();\n  return jobPortals.some(portal => lower.includes(portal));\n}\n\nfunction extractCompanyFromUrl(url) {\n  if (!url) return null;\n  \n  // Personio pattern: company.jobs.personio.com\n  const personioMatch = url.match(/([a-z0-9-]+)\\.jobs\\.personio\\.(?:com|de)/i);\n  if (personioMatch) {\n    return personioMatch[1].replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());\n  }\n  \n  // karriere.at pattern: firma/companyname\n  const karriereMatch = url.match(/karriere\\.at\\/(?:firma|f)\\/([a-z0-9-]+)/i);\n  if (karriereMatch) {\n    return karriereMatch[1].replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());\n  }\n  \n  return null;\n}\n\nfunction cleanCompanyName(name) {\n  if (!name) return '';\n  return name\n    .replace(/\\s*(GmbH|AG|SE|KG|OG|e\\.U\\.|& Co\\.?|Corp\\.?|Inc\\.?|Ltd\\.?)\\s*/gi, '')\n    .trim()\n    .replace(/[.,\\-]+$/, '');\n}\n\nfunction guessDomain(company) {\n  if (!company) return '';\n  const clean = company.toLowerCase()\n    .replace(/\\s*(gmbh|ag|se|kg|& co\\.?|inc\\.?|ltd\\.?)\\s*/gi, '')\n    .replace(/[^a-z0-9]/g, '');\n  return clean ? `${clean}.at` : '';\n}\n\nfunction parseSalary(text) {\n  if (!text) return null;\n  const clean = text.toLowerCase().replace(/[.,]/g, '');\n  \n  // Look for numbers like 65000, 65.000, 65k\n  const match = clean.match(/(\\d{2,3})[\\s]?(\\d{3})/);\n  if (match) return parseInt(match[1]) * 1000 + parseInt(match[2]);\n  \n  const kMatch = clean.match(/(\\d{2,3})k/);\n  if (kMatch) return parseInt(kMatch[1]) * 1000;\n  \n  return null;\n}\n\nconst jobs = [];\nconst seenCompanies = new Set();\n\n// Process Serper results\nfor (const result of serperResults) {\n  const url = result.link || '';\n  const title = result.title || '';\n  const snippet = result.snippet || '';\n  \n  // Skip job portals\n  if (isJobPortal(url)) continue;\n  \n  // Extract company\n  let company = extractCompanyFromUrl(url);\n  if (!company && result.source) company = result.source;\n  if (!company) continue;\n  \n  // Skip duplicates, blacklisted, recruiting agencies\n  const companyKey = company.toLowerCase();\n  if (seenCompanies.has(companyKey)) continue;\n  if (isBlacklisted(company)) continue;\n  if (isRecruitingAgency(company + ' ' + title)) continue;\n  \n  seenCompanies.add(companyKey);\n  \n  jobs.push({\n    job_title: title.split(' - ')[0].split(' | ')[0].trim(),\n    company_name: company,\n    company_name_clean: cleanCompanyName(company),\n    company_domain: guessDomain(company),\n    location: 'Austria',\n    job_url: url,\n    salary_text: snippet.match(/€[\\d.,]+/)?.[0] || '',\n    salary_num: parseSalary(snippet),\n    source: 'Google (Serper)',\n    posted_date: new Date().toISOString().split('T')[0]\n  });\n}\n\n// Process Apify results\nif (Array.isArray(apifyResults)) {\n  for (const job of apifyResults) {\n    const company = job.companyName || '';\n    if (!company) continue;\n    \n    const companyKey = company.toLowerCase();\n    if (seenCompanies.has(companyKey)) continue;\n    if (isBlacklisted(company)) continue;\n    if (isRecruitingAgency(company + ' ' + job.title)) continue;\n    \n    seenCompanies.add(companyKey);\n    \n    jobs.push({\n      job_title: job.title || '',\n      company_name: company,\n      company_name_clean: cleanCompanyName(company),\n      company_domain: guessDomain(company),\n      location: job.location || 'Austria',\n      job_url: job.jobUrl || '',\n      salary_text: job.salary || '',\n      salary_num: parseSalary(job.salary),\n      source: 'LinkedIn (Apify)',\n      company_linkedin: job.companyUrl || '',\n      applicants: job.applicantsCount || '',\n      posted_date: job.postedDate || new Date().toISOString().split('T')[0]\n    });\n  }\n}\n\n// Filter for salary >= €65,000\nconst filtered = jobs.filter(job => {\n  // If salary is known, must be >= 65000\n  if (job.salary_num && job.salary_num < 65000) return false;\n  return true;\n});\n\nconsole.log(`Found ${jobs.length} jobs, ${filtered.length} after salary filter`);\n\n// Return each job as separate item\nreturn filtered.map(job => ({ json: job }));"
       },
       "id": "combine-filter-jobs",
       "name": "Combine & Filter Jobs",
@@ -919,6 +919,39 @@
       }
     },
     {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "merge-serper-1-2",
+      "name": "Merge Serper 1+2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [660, 200]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "merge-serper-all",
+      "name": "Merge Serper All",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "merge-all-jobs",
+      "name": "Merge All Job Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1100, 380]
+    },
+    {
       "parameters": {},
       "id": "no-op-apify-failed",
       "name": "No Op (Apify Failed)",
@@ -1001,7 +1034,7 @@
       "main": [
         [
           {
-            "node": "Combine & Filter Jobs",
+            "node": "Merge Serper 1+2",
             "type": "main",
             "index": 0
           }
@@ -1012,9 +1045,9 @@
       "main": [
         [
           {
-            "node": "Combine & Filter Jobs",
+            "node": "Merge Serper 1+2",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -1023,7 +1056,29 @@
       "main": [
         [
           {
-            "node": "Combine & Filter Jobs",
+            "node": "Merge Serper All",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Serper 1+2": {
+      "main": [
+        [
+          {
+            "node": "Merge Serper All",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Serper All": {
+      "main": [
+        [
+          {
+            "node": "Merge All Job Sources",
             "type": "main",
             "index": 0
           }
@@ -1082,6 +1137,17 @@
       ]
     },
     "Get Apify Results": {
+      "main": [
+        [
+          {
+            "node": "Merge All Job Sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge All Job Sources": {
       "main": [
         [
           {
