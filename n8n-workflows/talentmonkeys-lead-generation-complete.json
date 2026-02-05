@@ -97,7 +97,25 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/runs?token={{$env.APIFY_API_KEY}}",
+        "url": "https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/runs",
+        "sendQueryParams": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_TOKEN"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n  urls: [\n    'https://www.linkedin.com/jobs/search/?keywords=' + encodeURIComponent($node['Category Rotation'].json.today_queries[0]) + '&location=Austria&f_TPR=r604800',\n    'https://www.linkedin.com/jobs/search/?keywords=' + encodeURIComponent($node['Category Rotation'].json.today_queries[1]) + '&location=Austria&f_TPR=r604800'\n  ],\n  maxItems: 30\n}) }}"
@@ -106,13 +124,7 @@
       "name": "Apify Start LinkedIn Scrape",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [440, 580],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "apify-api",
-          "name": "Apify API"
-        }
-      }
+      "position": [440, 580]
     },
     {
       "parameters": {
@@ -127,20 +139,23 @@
     },
     {
       "parameters": {
-        "url": "=https://api.apify.com/v2/actor-runs/{{ $node['Apify Start LinkedIn Scrape'].json.data.id }}?token={{$env.APIFY_API_KEY}}",
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $node['Apify Start LinkedIn Scrape'].json.data.id }}",
+        "sendQueryParams": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_TOKEN"
+            }
+          ]
+        },
         "options": {}
       },
       "id": "apify-check-status",
       "name": "Check Apify Status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [880, 580],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "apify-api",
-          "name": "Apify API"
-        }
-      }
+      "position": [880, 580]
     },
     {
       "parameters": {
@@ -173,20 +188,23 @@
     },
     {
       "parameters": {
-        "url": "=https://api.apify.com/v2/datasets/{{ $node['Check Apify Status'].json.data.defaultDatasetId }}/items?token={{$env.APIFY_API_KEY}}",
+        "url": "=https://api.apify.com/v2/datasets/{{ $node['Check Apify Status'].json.data.defaultDatasetId }}/items",
+        "sendQueryParams": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_TOKEN"
+            }
+          ]
+        },
         "options": {}
       },
       "id": "apify-get-results",
       "name": "Get Apify Results",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1320, 480],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "apify-api",
-          "name": "Apify API"
-        }
-      }
+      "position": [1320, 480]
     },
     {
       "parameters": {
