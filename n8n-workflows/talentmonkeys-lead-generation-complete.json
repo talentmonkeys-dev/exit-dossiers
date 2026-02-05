@@ -639,7 +639,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  campaign_id: '{{INSTANTLY_CAMPAIGN_ID}}',\n  leads: [{\n    email: $json.hr_email,\n    first_name: $json.hr_first_name,\n    last_name: $json.hr_last_name,\n    company_name: $json.company_name,\n    custom_variables: {\n      job_title: $json.clean_job_title,\n      hr_title: $json.hr_title,\n      email_subject: $json.email_subject,\n      email_body: $json.email_body\n    }\n  }]\n}) }}"
+        "jsonBody": "={{ JSON.stringify({\n  campaign_id: '6f411c49-3f6c-4177-af9a-9e1855b1014f',\n  leads: [{\n    email: $json.hr_email,\n    first_name: $json.hr_first_name,\n    last_name: $json.hr_last_name,\n    company_name: $json.company_name,\n    custom_variables: {\n      job_title: $json.clean_job_title,\n      hr_title: $json.hr_title,\n      email_subject: $json.email_subject,\n      email_body: $json.email_body\n    }\n  }]\n}) }}"
       },
       "id": "instantly-add-lead",
       "name": "Add Lead to Instantly",
