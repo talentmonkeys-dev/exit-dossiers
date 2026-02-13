@@ -1,0 +1,15 @@
+# Environment variables (contains secrets)
+.env
+
+# Google OAuth tokens (sensitive)
+token.pickle
+gmail_token.pickle
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Logs
+*.log

@@ -1,0 +1,1465 @@
+{
+  "name": "TalentMonkeys Lead Generation - Complete V5",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "trigger-daily",
+      "name": "Daily 07:00 Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TalentMonkeys - Category Rotation\n// Rotates through job categories daily\n\nconst categories = [\n  {\n    name: 'IT',\n    queries: [\n      'Software Developer Austria',\n      'IT Manager Wien',\n      'DevOps Engineer Österreich',\n      'Data Engineer Austria',\n      'Backend Developer Austria'\n    ]\n  },\n  {\n    name: 'Sales',\n    queries: [\n      'Sales Manager Austria',\n      'Account Manager Wien',\n      'Business Development Manager Österreich',\n      'Key Account Manager Austria'\n    ]\n  },\n  {\n    name: 'Marketing',\n    queries: [\n      'Marketing Manager Austria',\n      'Digital Marketing Manager Wien',\n      'Brand Manager Österreich'\n    ]\n  },\n  {\n    name: 'Finance',\n    queries: [\n      'Finance Manager Austria',\n      'Controller Wien',\n      'CFO Österreich'\n    ]\n  },\n  {\n    name: 'HR',\n    queries: [\n      'HR Manager Austria',\n      'People & Culture Manager Wien',\n      'Talent Acquisition Manager Österreich'\n    ]\n  },\n  {\n    name: 'Engineering',\n    queries: [\n      'Engineering Manager Austria',\n      'Technical Lead Wien',\n      'Project Engineer Österreich'\n    ]\n  },\n  {\n    name: 'Operations',\n    queries: [\n      'Operations Manager Austria',\n      'Supply Chain Manager Wien',\n      'Logistics Manager Österreich'\n    ]\n  }\n];\n\n// Calculate today's category based on day of year\nconst startDate = new Date('2025-01-01');\nconst today = new Date();\nconst daysSinceStart = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));\nconst categoryIndex = daysSinceStart % categories.length;\n\nconst todayCategory = categories[categoryIndex];\nconst tomorrowCategory = categories[(categoryIndex + 1) % categories.length];\n\nreturn [{\n  json: {\n    today_category: todayCategory.name,\n    today_queries: todayCategory.queries,\n    tomorrow_category: tomorrowCategory.name,\n    date: today.toISOString().split('T')[0],\n    day_of_week: today.toLocaleDateString('de-DE', { weekday: 'long' })\n  }\n}];"
+      },
+      "id": "category-rotation",
+      "name": "Category Rotation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  q: $json.today_queries[0] + ' job €65000',\n  location: 'Austria',\n  num: 20\n}) }}"
+      },
+      "id": "serper-search-1",
+      "name": "Serper Search 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 160],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "serper-api",
+          "name": "Serper API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  q: $json.today_queries[1] + ' job €65000',\n  location: 'Austria',\n  num: 20\n}) }}"
+      },
+      "id": "serper-search-2",
+      "name": "Serper Search 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "serper-api",
+          "name": "Serper API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  q: $json.today_queries[2] + ' job €65000',\n  location: 'Austria',\n  num: 20\n}) }}"
+      },
+      "id": "serper-search-3",
+      "name": "Serper Search 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 440],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "serper-api",
+          "name": "Serper API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/runs",
+        "sendQueryParams": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_TOKEN"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  urls: [\n    'https://www.linkedin.com/jobs/search/?keywords=' + encodeURIComponent($node['Category Rotation'].json.today_queries[0]) + '&location=Austria&f_TPR=r604800',\n    'https://www.linkedin.com/jobs/search/?keywords=' + encodeURIComponent($node['Category Rotation'].json.today_queries[1]) + '&location=Austria&f_TPR=r604800'\n  ],\n  maxItems: 30\n}) }}"
+      },
+      "id": "apify-start",
+      "name": "Apify Start LinkedIn Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 580]
+    },
+    {
+      "parameters": {
+        "amount": 120,
+        "unit": "seconds"
+      },
+      "id": "wait-apify",
+      "name": "Wait for Apify (2min)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [660, 580]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $node['Apify Start LinkedIn Scrape'].json.data.id }}",
+        "sendQueryParams": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_TOKEN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "apify-check-status",
+      "name": "Check Apify Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 580]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "status-check",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "SUCCEEDED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "apify-status-check",
+      "name": "Apify Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 580]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $node['Check Apify Status'].json.data.defaultDatasetId }}/items",
+        "sendQueryParams": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "YOUR_APIFY_TOKEN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "apify-get-results",
+      "name": "Get Apify Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 480]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine results from all merged job sources\n// Data comes from Merge node - each item has source info\nconst allItems = $input.all();\n\n// Separate Serper results (have 'organic' array) from Apify results\nconst serperResults = [];\nconst apifyResults = [];\n\nfor (const item of allItems) {\n  const data = item.json;\n  if (data.organic) {\n    // This is a Serper result\n    serperResults.push(...data.organic);\n  } else if (data.companyName || data.title) {\n    // This is an Apify LinkedIn job result\n    apifyResults.push(data);\n  } else if (Array.isArray(data)) {\n    // Apify results might come as array\n    apifyResults.push(...data);\n  }\n}\n\n// Blacklist of companies and job portals to exclude\nconst blacklist = [\n  'PSA', 'Drees & Sommer', 'LKW Walter', 'Cyan Security', 'Schmachtl',\n  'Netconomy', 'Lisec', 'Binderholz', 'Post', 'Still', 'KUKA', 'Kotanyi',\n  'Rail Power Systems', 'Doka', 'Hobex', 'Mubea', 'XXXL', 'Ortner', 'Axians',\n  'ARAG', 'Planradar', 'Haberkorn', 'Tractive', 'Bühler', 'Salesianer',\n  'Lasselsberger', 'Ebcont', 'Waterdrop', 'Hoerbiger', 'Verbund', 'Uniqa',\n  'RBI', 'Bawag', 'Bitpanda', 'Dynatrace', 'Storyblok', 'IKEA', 'Mjam'\n];\n\nconst recruitingKeywords = [\n  'recruiting', 'staffing', 'personalberatung', 'headhunter',\n  'hr consulting', 'personaldienstleister', 'zeitarbeit',\n  'personalvermittlung', 'executive search', 'randstad', 'hays',\n  'michael page', 'robert half', 'adecco', 'manpower'\n];\n\nconst jobPortals = [\n  'indeed.com', 'stepstone', 'karriere.at', 'monster.', 'glassdoor',\n  'linkedin.com/jobs', 'xing.com/jobs', 'jobs.at', 'willhaben.at/jobs'\n];\n\nfunction isBlacklisted(company) {\n  if (!company) return true;\n  const lower = company.toLowerCase();\n  return blacklist.some(bl => lower.includes(bl.toLowerCase()));\n}\n\nfunction isRecruitingAgency(text) {\n  if (!text) return false;\n  const lower = text.toLowerCase();\n  return recruitingKeywords.some(kw => lower.includes(kw));\n}\n\nfunction isJobPortal(url) {\n  if (!url) return false;\n  const lower = url.toLowerCase();\n  return jobPortals.some(portal => lower.includes(portal));\n}\n\nfunction extractCompanyFromUrl(url) {\n  if (!url) return null;\n  \n  // Personio pattern: company.jobs.personio.com\n  const personioMatch = url.match(/([a-z0-9-]+)\\.jobs\\.personio\\.(?:com|de)/i);\n  if (personioMatch) {\n    return personioMatch[1].replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());\n  }\n  \n  // karriere.at pattern: firma/companyname\n  const karriereMatch = url.match(/karriere\\.at\\/(?:firma|f)\\/([a-z0-9-]+)/i);\n  if (karriereMatch) {\n    return karriereMatch[1].replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());\n  }\n  \n  return null;\n}\n\nfunction cleanCompanyName(name) {\n  if (!name) return '';\n  return name\n    .replace(/\\s*(GmbH|AG|SE|KG|OG|e\\.U\\.|& Co\\.?|Corp\\.?|Inc\\.?|Ltd\\.?)\\s*/gi, '')\n    .trim()\n    .replace(/[.,\\-]+$/, '');\n}\n\nfunction guessDomain(company) {\n  if (!company) return '';\n  const clean = company.toLowerCase()\n    .replace(/\\s*(gmbh|ag|se|kg|& co\\.?|inc\\.?|ltd\\.?)\\s*/gi, '')\n    .replace(/[^a-z0-9]/g, '');\n  return clean ? `${clean}.at` : '';\n}\n\nfunction parseSalary(text) {\n  if (!text) return null;\n  const clean = text.toLowerCase().replace(/[.,]/g, '');\n  \n  // Look for numbers like 65000, 65.000, 65k\n  const match = clean.match(/(\\d{2,3})[\\s]?(\\d{3})/);\n  if (match) return parseInt(match[1]) * 1000 + parseInt(match[2]);\n  \n  const kMatch = clean.match(/(\\d{2,3})k/);\n  if (kMatch) return parseInt(kMatch[1]) * 1000;\n  \n  return null;\n}\n\nconst jobs = [];\nconst seenCompanies = new Set();\n\n// Process Serper results\nfor (const result of serperResults) {\n  const url = result.link || '';\n  const title = result.title || '';\n  const snippet = result.snippet || '';\n  \n  // Skip job portals\n  if (isJobPortal(url)) continue;\n  \n  // Extract company\n  let company = extractCompanyFromUrl(url);\n  if (!company && result.source) company = result.source;\n  if (!company) continue;\n  \n  // Skip duplicates, blacklisted, recruiting agencies\n  const companyKey = company.toLowerCase();\n  if (seenCompanies.has(companyKey)) continue;\n  if (isBlacklisted(company)) continue;\n  if (isRecruitingAgency(company + ' ' + title)) continue;\n  \n  seenCompanies.add(companyKey);\n  \n  jobs.push({\n    job_title: title.split(' - ')[0].split(' | ')[0].trim(),\n    company_name: company,\n    company_name_clean: cleanCompanyName(company),\n    company_domain: guessDomain(company),\n    location: 'Austria',\n    job_url: url,\n    salary_text: snippet.match(/€[\\d.,]+/)?.[0] || '',\n    salary_num: parseSalary(snippet),\n    source: 'Google (Serper)',\n    posted_date: new Date().toISOString().split('T')[0]\n  });\n}\n\n// Process Apify results\nif (Array.isArray(apifyResults)) {\n  for (const job of apifyResults) {\n    const company = job.companyName || '';\n    if (!company) continue;\n    \n    const companyKey = company.toLowerCase();\n    if (seenCompanies.has(companyKey)) continue;\n    if (isBlacklisted(company)) continue;\n    if (isRecruitingAgency(company + ' ' + job.title)) continue;\n    \n    seenCompanies.add(companyKey);\n    \n    jobs.push({\n      job_title: job.title || '',\n      company_name: company,\n      company_name_clean: cleanCompanyName(company),\n      company_domain: guessDomain(company),\n      location: job.location || 'Austria',\n      job_url: job.jobUrl || '',\n      salary_text: job.salary || '',\n      salary_num: parseSalary(job.salary),\n      source: 'LinkedIn (Apify)',\n      company_linkedin: job.companyUrl || '',\n      applicants: job.applicantsCount || '',\n      posted_date: job.postedDate || new Date().toISOString().split('T')[0]\n    });\n  }\n}\n\n// Filter for salary >= €65,000\nconst filtered = jobs.filter(job => {\n  // If salary is known, must be >= 65000\n  if (job.salary_num && job.salary_num < 65000) return false;\n  return true;\n});\n\nconsole.log(`Found ${jobs.length} jobs, ${filtered.length} after salary filter`);\n\n// Return each job as separate item\nreturn filtered.map(job => ({ json: job }));"
+      },
+      "id": "combine-filter-jobs",
+      "name": "Combine & Filter Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Tei2P38DZpzEO1eKSnSlHoNDm3Gv3GslVsnYxmig07Q",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Jobs",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.toFormat('yyyy-MM-dd') }}",
+            "Job_Title": "={{ $json.job_title }}",
+            "Company": "={{ $json.company_name }}",
+            "Domain": "={{ $json.company_domain }}",
+            "Location": "={{ $json.location }}",
+            "Salary": "={{ $json.salary_text }}",
+            "Job_URL": "={{ $json.job_url }}",
+            "Source": "={{ $json.source }}",
+            "Status": "pending_approval",
+            "Approved": "",
+            "Responsible": "Flavio"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "save-to-sheets",
+      "name": "Save Jobs to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1760, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets",
+          "name": "Google Sheets OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare approval email summary\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [{ json: { no_jobs: true, message: 'Keine neuen Jobs heute gefunden.' } }];\n}\n\n// Build HTML table\nlet tableRows = '';\nfor (let i = 0; i < items.length; i++) {\n  const job = items[i].json;\n  tableRows += `\n    <tr>\n      <td style=\"padding:8px;border:1px solid #ddd;\">${i + 1}</td>\n      <td style=\"padding:8px;border:1px solid #ddd;\">${job.company_name}</td>\n      <td style=\"padding:8px;border:1px solid #ddd;\">${job.job_title}</td>\n      <td style=\"padding:8px;border:1px solid #ddd;\">${job.salary_text || '-'}</td>\n      <td style=\"padding:8px;border:1px solid #ddd;\"><a href=\"${job.job_url}\">Link</a></td>\n    </tr>`;\n}\n\nconst html = `\n<html>\n<body style=\"font-family:Arial,sans-serif;\">\n  <h2>🎯 TalentMonkeys Lead Approval - ${new Date().toLocaleDateString('de-DE')}</h2>\n  <p>Hallo Flavio,</p>\n  <p>Heute wurden <strong>${items.length} neue Jobs</strong> gefunden:</p>\n  \n  <table style=\"border-collapse:collapse;width:100%;\">\n    <tr style=\"background:#002d62;color:white;\">\n      <th style=\"padding:10px;\">#</th>\n      <th style=\"padding:10px;\">Firma</th>\n      <th style=\"padding:10px;\">Position</th>\n      <th style=\"padding:10px;\">Gehalt</th>\n      <th style=\"padding:10px;\">Link</th>\n    </tr>\n    ${tableRows}\n  </table>\n  \n  <p style=\"margin-top:20px;\">\n    <strong>Bitte antworte auf diese Email mit:</strong>\n  </p>\n  <ul>\n    <li><strong>\"JA\"</strong> oder <strong>\"ALLE\"</strong> = Alle Leads freigeben</li>\n    <li><strong>\"NEIN\"</strong> = Alle überspringen</li>\n    <li><strong>Nummern</strong> z.B. \"1,3,5\" = Nur diese freigeben</li>\n  </ul>\n  \n  <p style=\"color:#666;font-size:12px;margin-top:30px;\">\n    Automatisch generiert von TalentMonkeys Lead Generation System\n  </p>\n</body>\n</html>`;\n\nreturn [{\n  json: {\n    subject: `🎯 Lead Approval: ${items.length} neue Jobs - ${new Date().toLocaleDateString('de-DE')}`,\n    html_body: html,\n    jobs_count: items.length,\n    jobs: items.map((item, i) => ({ ...item.json, index: i + 1 }))\n  }\n}];"
+      },
+      "id": "prepare-approval-email",
+      "name": "Prepare Approval Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "Flavio@talentmonkeys.com",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html_body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "send-approval-email",
+      "name": "Send Approval Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2200, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-oauth",
+          "name": "Gmail OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "q": "subject:(Lead Approval) is:inbox newer_than:1d"
+        },
+        "options": {
+          "downloadAttachments": false
+        }
+      },
+      "id": "gmail-reply-trigger",
+      "name": "Gmail Reply Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 700],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-oauth",
+          "name": "Gmail OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse approval response\nconst items = $input.all();\nconst approvedJobs = [];\n\nfor (const item of items) {\n  const email = item.json;\n  const body = (email.snippet || email.text || '').toLowerCase().trim();\n  \n  // Get the thread to find original jobs\n  // For now, we'll fetch from Google Sheets\n  \n  if (body.includes('ja') || body.includes('alle') || body.includes('yes') || body.includes('all')) {\n    // Approve all\n    approvedJobs.push({ approval: 'all' });\n  } else if (body.includes('nein') || body.includes('no') || body.includes('skip')) {\n    // Skip all\n    approvedJobs.push({ approval: 'none' });\n  } else {\n    // Parse numbers like \"1,3,5\" or \"1 3 5\"\n    const numbers = body.match(/\\d+/g);\n    if (numbers) {\n      approvedJobs.push({ approval: 'selected', indices: numbers.map(n => parseInt(n)) });\n    }\n  }\n}\n\nreturn approvedJobs.map(a => ({ json: a }));"
+      },
+      "id": "parse-approval",
+      "name": "Parse Approval Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 700]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1Tei2P38DZpzEO1eKSnSlHoNDm3Gv3GslVsnYxmig07Q",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Jobs",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "pending_approval"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-pending-jobs",
+      "name": "Get Pending Jobs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [440, 700],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets",
+          "name": "Google Sheets OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter jobs based on approval\nconst approval = $node['Parse Approval Response'].json;\nconst pendingJobs = $node['Get Pending Jobs'].json;\nconst allPending = $input.all().map(i => i.json);\n\nif (approval.approval === 'none') {\n  // Mark all as skipped\n  return [];\n}\n\nif (approval.approval === 'all') {\n  // Approve all pending jobs\n  return allPending.map(job => ({ json: { ...job, approved: true } }));\n}\n\nif (approval.approval === 'selected') {\n  // Only approve selected indices\n  const indices = approval.indices || [];\n  return allPending\n    .filter((job, i) => indices.includes(i + 1))\n    .map(job => ({ json: { ...job, approved: true } }));\n}\n\nreturn [];"
+      },
+      "id": "filter-approved",
+      "name": "Filter Approved Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 700]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/organizations/enrich",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ domain: $json.Domain || $json.company_domain }) }}"
+      },
+      "id": "apollo-enrich-org",
+      "name": "Apollo Enrich Organization",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 700],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apollo-api",
+          "name": "Apollo API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "employees-check",
+              "leftValue": "={{ $json.organization?.estimated_num_employees }}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-employees",
+      "name": "Check Min 50 Employees",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 700]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/mixed_people/api_search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  organization_domains: [$json.organization?.primary_domain || $node['Filter Approved Jobs'].json.Domain],\n  person_titles: [\n    'HR Business Partner',\n    'Head of HR',\n    'HR Director',\n    'HR Manager',\n    'People & Culture Manager',\n    'Talent Acquisition Manager',\n    'HR Lead',\n    'Personalleiter',\n    'Head of People'\n  ],\n  per_page: 3\n}) }}"
+      },
+      "id": "apollo-search-hr",
+      "name": "Apollo Search HR Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 600],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apollo-api",
+          "name": "Apollo API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "people-found",
+              "leftValue": "={{ $json.people?.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "hr-contacts-found",
+      "name": "HR Contacts Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1540, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/people/bulk_match",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  reveal_personal_emails: true,\n  details: [{ id: $json.people[0].id }]\n}) }}"
+      },
+      "id": "apollo-reveal-email",
+      "name": "Apollo Reveal Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 500],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apollo-api",
+          "name": "Apollo API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build enriched lead data\nconst org = $node['Apollo Enrich Organization'].json.organization || {};\nconst people = $node['Apollo Search HR Contacts'].json.people || [];\nconst revealed = $json.matches || [];\nconst originalJob = $node['Filter Approved Jobs'].json;\n\nconst hrContact = revealed[0] || people[0] || {};\nconst email = hrContact.email || '';\nconst linkedin = hrContact.linkedin_url || '';\n\n// Skip if no contact info at all\nif (!email && !linkedin) {\n  return [];\n}\n\nreturn [{\n  json: {\n    // Company data\n    company_name: org.name || originalJob.Company,\n    company_domain: org.primary_domain || originalJob.Domain,\n    company_website: org.website_url || `https://${originalJob.Domain}`,\n    company_employees: org.estimated_num_employees || 0,\n    company_industry: org.industry || '',\n    company_linkedin: org.linkedin_url || '',\n    \n    // Job data\n    job_title: originalJob.Job_Title,\n    job_url: originalJob.Job_URL,\n    job_salary: originalJob.Salary,\n    \n    // HR Contact\n    hr_first_name: hrContact.first_name || '',\n    hr_last_name: hrContact.last_name || '',\n    hr_full_name: hrContact.name || `${hrContact.first_name || ''} ${hrContact.last_name || ''}`.trim(),\n    hr_title: hrContact.title || '',\n    hr_email: email,\n    hr_email_verified: hrContact.email_status === 'verified',\n    hr_linkedin: linkedin,\n    \n    // Metadata\n    source: originalJob.Source,\n    enriched_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "build-lead-data",
+      "name": "Build Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-email",
+              "leftValue": "={{ $json.hr_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-email-check",
+      "name": "Has Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2200, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'claude-sonnet-4-20250514',\n  max_tokens: 1024,\n  messages: [{\n    role: 'user',\n    content: 'Du bist ein erfahrener Recruiting-Berater bei TalentMonkeys, einer österreichischen Recruiting-Agentur.\\n\\nSchreibe eine kurze, persönliche Kaltakquise-Email an:\\n- Name: ' + $json.hr_first_name + '\\n- Titel: ' + $json.hr_title + '\\n- Firma: ' + $json.company_name + '\\n- Die Firma sucht gerade: ' + $json.job_title + '\\n\\nDie Email soll:\\n1. Den Vornamen nutzen (\"Hallo ' + $json.hr_first_name + '\")\\n2. Die offene Stelle erwähnen als Anlass\\n3. TalentMonkeys als Lösung positionieren\\n4. Kurz sein (max 100 Wörter)\\n5. Einen klaren Call-to-Action haben\\n6. Professionell aber freundlich klingen\\n7. KEINE Emojis verwenden\\n\\nAntworte NUR mit der Email selbst, ohne Erklärungen. Format:\\nBetreff: [Betreffzeile]\\n\\n[Email-Text]'\n  }]\n}) }}"
+      },
+      "id": "claude-generate-message",
+      "name": "Claude Generate Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude response and extract email\nconst response = $json;\nconst leadData = $node['Build Lead Data'].json;\n\n// Native Anthropic node returns text directly or in response.text\nlet content = response.text || response.message?.content || '';\nif (response.content && response.content[0]) {\n  content = response.content[0].text || content;\n}\n\n// Parse subject and body\nlet subject = '';\nlet body = '';\n\nconst subjectMatch = content.match(/Betreff:\\s*(.+?)\\n/);\nif (subjectMatch) {\n  subject = subjectMatch[1].trim();\n  body = content.replace(/Betreff:\\s*.+?\\n\\n?/, '').trim();\n} else {\n  // Fallback\n  subject = `Ihre offene Stelle: ${leadData.job_title}`;\n  body = content;\n}\n\n// Clean the job title for Instantly\nconst cleanJobTitle = leadData.job_title\n  .split(' - ')[0]\n  .split(' | ')[0]\n  .split(' bei ')[0]\n  .trim();\n\nreturn [{\n  json: {\n    ...leadData,\n    email_subject: subject,\n    email_body: body,\n    clean_job_title: cleanJobTitle,\n    generated_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-claude-response",
+      "name": "Parse Claude Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 400]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Tei2P38DZpzEO1eKSnSlHoNDm3Gv3GslVsnYxmig07Q",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.toFormat('yyyy-MM-dd') }}",
+            "Company": "={{ $json.company_name }}",
+            "Domain": "={{ $json.company_domain }}",
+            "Employees": "={{ $json.company_employees }}",
+            "HR_Name": "={{ $json.hr_full_name }}",
+            "HR_Title": "={{ $json.hr_title }}",
+            "HR_Email": "={{ $json.hr_email }}",
+            "HR_LinkedIn": "={{ $json.hr_linkedin }}",
+            "Job_Title": "={{ $json.job_title }}",
+            "Clean_Job_Title": "={{ $json.clean_job_title }}",
+            "Email_Subject": "={{ $json.email_subject }}",
+            "Email_Body": "={{ $json.email_body }}",
+            "Status": "ready_for_outreach",
+            "Instantly_Status": ""
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "save-lead-to-sheets",
+      "name": "Save Lead to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2860, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets",
+          "name": "Google Sheets OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.instantly.ai/api/v2/leads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  campaign_id: '6f411c49-3f6c-4177-af9a-9e1855b1014f',\n  leads: [{\n    email: $json.hr_email,\n    first_name: $json.hr_first_name,\n    last_name: $json.hr_last_name,\n    company_name: $json.company_name,\n    custom_variables: {\n      job_title: $json.clean_job_title,\n      hr_title: $json.hr_title,\n      email_subject: $json.email_subject,\n      email_body: $json.email_body\n    }\n  }]\n}) }}"
+      },
+      "id": "instantly-add-lead",
+      "name": "Add Lead to Instantly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3080, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "instantly-api",
+          "name": "Instantly API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Tei2P38DZpzEO1eKSnSlHoNDm3Gv3GslVsnYxmig07Q",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "sent_to_instantly",
+            "Instantly_Status": "added"
+          },
+          "matchingColumns": ["HR_Email"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "update-lead-status",
+      "name": "Update Lead Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [3300, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets",
+          "name": "Google Sheets OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instantly-webhook",
+        "options": {}
+      },
+      "id": "instantly-reply-webhook",
+      "name": "Instantly Reply Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 1100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Instantly webhook for reply\nconst webhook = $json;\nconst body = webhook.body || webhook;\n\n// Extract reply details\nconst replyEmail = body.lead_email || body.email || '';\nconst replyText = body.reply_text || body.message || body.body || '';\nconst replySubject = body.subject || '';\nconst campaignId = body.campaign_id || '';\n\nreturn [{\n  json: {\n    reply_email: replyEmail,\n    reply_text: replyText,\n    reply_subject: replySubject,\n    campaign_id: campaignId,\n    received_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-instantly-reply",
+      "name": "Parse Instantly Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 1100]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1Tei2P38DZpzEO1eKSnSlHoNDm3Gv3GslVsnYxmig07Q",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "HR_Email",
+              "lookupValue": "={{ $json.reply_email }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-lead-context",
+      "name": "Get Lead Context",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [440, 1100],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets",
+          "name": "Google Sheets OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'claude-sonnet-4-20250514',\n  max_tokens: 1024,\n  messages: [{\n    role: 'user',\n    content: 'Du bist ein Recruiting-Berater bei TalentMonkeys.\\n\\nAnalysiere diese Email-Antwort und klassifiziere sie:\\n\\nAntwort von: ' + ($node['Get Lead Context'].json.HR_Name || 'Unbekannt') + '\\nFirma: ' + ($node['Get Lead Context'].json.Company || 'Unbekannt') + '\\nAntwort-Text:\\n\"' + $json.reply_text + '\"\\n\\nKlassifiziere als:\\n1. POSITIV - Interesse an einem Gespräch/Meeting\\n2. NEGATIV - Kein Interesse, Absage\\n3. FRAGE - Hat Rückfragen, braucht mehr Info\\n4. SPÄTER - Will später kontaktiert werden\\n5. ABWESEND - Out of Office, Urlaub etc.\\n\\nSchreibe dann eine passende Antwort:\\n- Bei POSITIV: Schlage einen Termin vor mit diesem Calendly-Link: https://calendly.com/flavio_1/meeting\\n- Bei NEGATIV: Bedanke dich höflich und wünsche alles Gute\\n- Bei FRAGE: Beantworte die Frage und biete Gespräch an\\n- Bei SPÄTER: Bestätige und frage nach gutem Zeitpunkt\\n- Bei ABWESEND: Keine Antwort nötig\\n\\nFormat:\\nKLASSIFIKATION: [KATEGORIE]\\n\\nANTWORT:\\n[Deine Antwort oder \"KEINE\" wenn nicht nötig]'\n  }]\n}) }}"
+      },
+      "id": "claude-analyze-reply",
+      "name": "Claude Analyze Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 1100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's reply analysis\nconst response = $json;\nconst replyData = $node['Parse Instantly Reply'].json;\nconst leadData = $node['Get Lead Context'].json;\n\n// Native Anthropic node returns text directly or in response.text\nlet content = response.text || response.message?.content || '';\nif (response.content && response.content[0]) {\n  content = response.content[0].text || content;\n}\n\n// Parse classification\nconst classMatch = content.match(/KLASSIFIKATION:\\s*(POSITIV|NEGATIV|FRAGE|SPÄTER|ABWESEND)/i);\nconst classification = classMatch ? classMatch[1].toUpperCase() : 'UNKNOWN';\n\n// Parse response\nconst responseMatch = content.match(/ANTWORT:\\s*([\\s\\S]+?)(?:$|KLASSIFIKATION)/i);\nlet replyResponse = responseMatch ? responseMatch[1].trim() : '';\n\n// Check if no response needed\nconst noResponse = replyResponse.toLowerCase().includes('keine') || classification === 'ABWESEND';\n\nreturn [{\n  json: {\n    classification: classification,\n    reply_response: replyResponse,\n    no_response_needed: noResponse,\n    lead_email: replyData.reply_email,\n    lead_name: leadData.HR_Name || '',\n    company: leadData.Company || '',\n    original_reply: replyData.reply_text\n  }\n}];"
+      },
+      "id": "parse-reply-analysis",
+      "name": "Parse Reply Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 1100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "needs-response",
+              "leftValue": "={{ $json.no_response_needed }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "needs-response-check",
+      "name": "Needs Response?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 1100]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.lead_email }}",
+        "subject": "=Re: {{ $node['Parse Instantly Reply'].json.reply_subject }}",
+        "message": "={{ $json.reply_response }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "send-reply-response",
+      "name": "Send Reply Response",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1320, 1000],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-oauth",
+          "name": "Gmail OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Tei2P38DZpzEO1eKSnSlHoNDm3Gv3GslVsnYxmig07Q",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Conversations",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.toFormat('yyyy-MM-dd HH:mm') }}",
+            "Email": "={{ $json.lead_email }}",
+            "Company": "={{ $json.company }}",
+            "Classification": "={{ $json.classification }}",
+            "Their_Reply": "={{ $json.original_reply }}",
+            "Our_Response": "={{ $json.reply_response }}",
+            "Response_Sent": "={{ !$json.no_response_needed }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "log-conversation",
+      "name": "Log Conversation",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1540, 1100],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets",
+          "name": "Google Sheets OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Tei2P38DZpzEO1eKSnSlHoNDm3Gv3GslVsnYxmig07Q",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "={{ $json.classification === 'POSITIV' ? 'meeting_scheduled' : ($json.classification === 'NEGATIV' ? 'closed_lost' : 'in_conversation') }}",
+            "Last_Response": "={{ $json.classification }}"
+          },
+          "matchingColumns": ["HR_Email"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "update-lead-after-reply",
+      "name": "Update Lead Status After Reply",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1760, 1100],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets",
+          "name": "Google Sheets OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 4,
+        "options": {}
+      },
+      "id": "merge-all-jobs",
+      "name": "Merge All Job Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {},
+      "id": "no-op-apify-failed",
+      "name": "No Op (Apify Failed)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1320, 680]
+    },
+    {
+      "parameters": {},
+      "id": "no-op-no-hr",
+      "name": "No Op (No HR Contact)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1760, 700]
+    },
+    {
+      "parameters": {},
+      "id": "no-op-small-company",
+      "name": "No Op (Small Company)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1320, 800]
+    },
+    {
+      "parameters": {},
+      "id": "no-op-no-email",
+      "name": "No Op (No Email)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2420, 600]
+    },
+    {
+      "parameters": {},
+      "id": "no-op-no-response",
+      "name": "No Op (No Response Needed)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1320, 1200]
+    }
+  ],
+  "connections": {
+    "Daily 07:00 Trigger": {
+      "main": [
+        [
+          {
+            "node": "Category Rotation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Category Rotation": {
+      "main": [
+        [
+          {
+            "node": "Serper Search 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Serper Search 2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Serper Search 3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Apify Start LinkedIn Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serper Search 1": {
+      "main": [
+        [
+          {
+            "node": "Merge All Job Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serper Search 2": {
+      "main": [
+        [
+          {
+            "node": "Merge All Job Sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Serper Search 3": {
+      "main": [
+        [
+          {
+            "node": "Merge All Job Sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Apify Start LinkedIn Scrape": {
+      "main": [
+        [
+          {
+            "node": "Wait for Apify (2min)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Apify (2min)": {
+      "main": [
+        [
+          {
+            "node": "Check Apify Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Apify Status": {
+      "main": [
+        [
+          {
+            "node": "Apify Succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify Succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Get Apify Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Op (Apify Failed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Apify Results": {
+      "main": [
+        [
+          {
+            "node": "Merge All Job Sources",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge All Job Sources": {
+      "main": [
+        [
+          {
+            "node": "Combine & Filter Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine & Filter Jobs": {
+      "main": [
+        [
+          {
+            "node": "Save Jobs to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Jobs to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Prepare Approval Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Approval Email": {
+      "main": [
+        [
+          {
+            "node": "Send Approval Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Reply Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Approval Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Approval Response": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pending Jobs": {
+      "main": [
+        [
+          {
+            "node": "Filter Approved Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Approved Jobs": {
+      "main": [
+        [
+          {
+            "node": "Apollo Enrich Organization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Enrich Organization": {
+      "main": [
+        [
+          {
+            "node": "Check Min 50 Employees",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Min 50 Employees": {
+      "main": [
+        [
+          {
+            "node": "Apollo Search HR Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Op (Small Company)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Search HR Contacts": {
+      "main": [
+        [
+          {
+            "node": "HR Contacts Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HR Contacts Found?": {
+      "main": [
+        [
+          {
+            "node": "Apollo Reveal Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Op (No HR Contact)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Reveal Email": {
+      "main": [
+        [
+          {
+            "node": "Build Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Has Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email?": {
+      "main": [
+        [
+          {
+            "node": "Claude Generate Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Op (No Email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Generate Message": {
+      "main": [
+        [
+          {
+            "node": "Parse Claude Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Claude Response": {
+      "main": [
+        [
+          {
+            "node": "Save Lead to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Add Lead to Instantly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Lead to Instantly": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instantly Reply Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Instantly Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Instantly Reply": {
+      "main": [
+        [
+          {
+            "node": "Get Lead Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Lead Context": {
+      "main": [
+        [
+          {
+            "node": "Claude Analyze Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Analyze Reply": {
+      "main": [
+        [
+          {
+            "node": "Parse Reply Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Reply Analysis": {
+      "main": [
+        [
+          {
+            "node": "Needs Response?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Response?": {
+      "main": [
+        [
+          {
+            "node": "Send Reply Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Op (No Response Needed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reply Response": {
+      "main": [
+        [
+          {
+            "node": "Log Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Op (No Response Needed)": {
+      "main": [
+        [
+          {
+            "node": "Log Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Conversation": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Status After Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "talentmonkeys-lead-gen-v5"
+  },
+  "pinData": {},
+  "versionId": "v5-complete",
+  "triggerCount": 0,
+  "tags": [
+    {
+      "id": "1",
+      "name": "TalentMonkeys"
+    },
+    {
+      "id": "2",
+      "name": "Lead Generation"
+    }
+  ]
+}
